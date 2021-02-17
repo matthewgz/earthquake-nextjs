@@ -5,6 +5,7 @@ import CustomMarker from 'components/CustomMarker'
 import { map, isEmpty } from 'lodash'
 import getLatLng from 'utils/getLatLng'
 import { withScriptjs, withGoogleMap, GoogleMap } from 'react-google-maps'
+import MarkerClusterer from 'react-google-maps/lib/components/addons/MarkerClusterer'
 
 const GoogleMaps = compose(
   withProps({
@@ -26,9 +27,11 @@ const GoogleMaps = compose(
 
   return (
     <GoogleMap defaultZoom={4} center={latLng}>
-      {props.isMarkerShown &&
-        !isEmpty(data) &&
-        Children.toArray(map(data, (item) => <CustomMarker {...item} />))}
+      <MarkerClusterer averageCenter enableRetinaIcons gridSize={60}>
+        {props.isMarkerShown &&
+          !isEmpty(data) &&
+          Children.toArray(map(data, (item) => <CustomMarker {...item} />))}
+      </MarkerClusterer>
     </GoogleMap>
   )
 })

@@ -95,8 +95,6 @@ const Home = (props) => {
 
     const URL = getUrlAPI(dates, minMagnitude)
 
-    console.log(URL)
-
     const res = await fetch(URL)
 
     const dataRes = await res.json()
@@ -126,8 +124,6 @@ const Home = (props) => {
 
 export async function getServerSideProps() {
   const URL = getUrlAPI({}, MIN_MAGNITUDE)
-
-  console.log(URL)
 
   const res = await fetch(URL)
 
