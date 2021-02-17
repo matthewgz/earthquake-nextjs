@@ -93,7 +93,9 @@ const Home = (props) => {
 
     dispatch({ type: TYPES.start })
 
-    const res = await fetch(getUrlAPI(dates, minMagnitude))
+    const URL = getUrlAPI(dates, minMagnitude)
+
+    const res = await fetch(URL)
 
     const dataRes = await res.json()
 
@@ -121,7 +123,9 @@ const Home = (props) => {
 }
 
 export async function getServerSideProps() {
-  const res = await fetch(getUrlAPI({}, MIN_MAGNITUDE))
+  const URL = getUrlAPI({}, MIN_MAGNITUDE)
+
+  const res = await fetch(URL)
 
   const data = await res.json()
 
