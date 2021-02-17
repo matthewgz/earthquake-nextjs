@@ -1,65 +1,131 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import { useReducer, useContext, useEffect, useRef, useState } from 'react'
+import Helmet from 'components/Helmet'
+import Header from 'components/Header'
+import Results from 'components/Results'
+import GoogleMaps from 'components/GoogleMaps'
+import { Context } from 'context/index'
+import { MIN_MAGNITUDE, PER_PAGE, TYPES } from 'utils/constants'
+import getUrlAPI from 'utils/getUrlAPI'
+import { isEqual } from 'lodash'
 
-export default function Home() {
+import styled from 'styled-components'
+
+const Container = styled.div`
+  position: relative;
+  height: 100vh;
+
+  & main {
+    position: absolute;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    left: 0;
+  }
+`
+
+const getInitialState = (data) => ({
+  allData: data,
+  loading: false,
+  more: data.length >= PER_PAGE,
+  data: data.slice(0, PER_PAGE),
+  total: data.length,
+  after: 10,
+  error: undefined,
+})
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case TYPES.start:
+      return { ...state, loading: true }
+
+    case TYPES.loaded:
+      return {
+        ...state,
+        loading: false,
+        data: [...state.data, ...action.newData],
+        more: action.newData.length === PER_PAGE,
+        after: state.after + action.newData.length,
+        total: action.allData.length,
+        allData: action.allData,
+      }
+
+    case TYPES.more:
+      return {
+        ...state,
+        more: true,
+        allData: action.allData,
+        total: action.allData.length,
+      }
+
+    case TYPES.reset:
+      return getInitialState(action.allData)
+
+    default:
+      throw new Error("Don't understand action")
+  }
+}
+
+const Home = (props) => {
+  const { data = [] } = props
+
+  const firstUpdate = useRef(true)
+
+  const { minMagnitude, dates } = useContext(Context)
+
+  const [state, dispatch] = useReducer(reducer, getInitialState(data))
+
+  const load = () => {
+    dispatch({ type: TYPES.start })
+
+    setTimeout(() => {
+      const newData = state.allData.slice(state.after, state.after + PER_PAGE)
+
+      dispatch({ type: TYPES.loaded, newData, allData: state.allData })
+    }, 300)
+  }
+
+  useEffect(async () => {
+    if (firstUpdate.current) {
+      firstUpdate.current = false
+
+      return
+    }
+
+    dispatch({ type: TYPES.start })
+
+    const res = await fetch(getUrlAPI(dates, minMagnitude))
+
+    const dataRes = await res.json()
+
+    dispatch({ type: TYPES.more, allData: dataRes?.features })
+  }, [minMagnitude, dates])
+
+  useEffect(() => {
+    if (isEqual(state.allData, data)) {
+      return
+    }
+
+    dispatch({ type: TYPES.reset, allData: state.allData })
+  }, [state.allData])
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+    <Container>
+      <Helmet title="Earthquake" />
+      <Header />
+      <main>
+        <Results {...state} load={load} />
+        <GoogleMaps isMarkerShown data={state.data} />
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
+    </Container>
   )
 }
+
+export async function getServerSideProps() {
+  const res = await fetch(getUrlAPI({}, MIN_MAGNITUDE))
+
+  const data = await res.json()
+
+  return { props: { data: data?.features } }
+}
+
+export default Home
