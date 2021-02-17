@@ -21,6 +21,10 @@ const CustomMarker = (props) => {
     setShowWindowInfo(e)
   }
 
+  const handleToggleShowInfo = () => {
+    setShowWindowInfo(!showWindowInfo)
+  }
+
   useEffect(() => {
     if (firstUpdate.current) {
       firstUpdate.current = false
@@ -38,9 +42,7 @@ const CustomMarker = (props) => {
   return (
     <Marker
       position={getLatLng(props)}
-      onClick={() => {
-        setShowWindowInfo(true)
-      }}
+      onClick={handleToggleShowInfo}
       icon={marker}
     >
       {showWindowInfo && (
