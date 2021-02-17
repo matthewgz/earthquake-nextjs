@@ -87,7 +87,7 @@ const hide = {
 const Results = (props) => {
   const { data, loading, more, load, total } = props
 
-  const { showResults } = useContext(Context)
+  const { showResults, isMobile, setShowResults } = useContext(Context)
 
   const [animation, setAnimation] = useState({
     fin: showResults ? show.fin : hide.fin,
@@ -120,6 +120,10 @@ const Results = (props) => {
   useEffect(() => {
     loader.current = load
   }, [load])
+
+  useEffect(() => {
+    setShowResults(!isMobile)
+  }, [isMobile])
 
   return (
     <Container {...animation}>

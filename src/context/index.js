@@ -9,7 +9,7 @@ const Provider = (props) => {
 
   const [showFilters, setShowFilters] = useState(false)
 
-  const [showResults, setShowResults] = useState(true)
+  const [showResults, setShowResults] = useState(false)
 
   const [minMagnitude, setMinMagnitude] = useState(MIN_MAGNITUDE)
 
