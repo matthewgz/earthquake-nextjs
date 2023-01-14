@@ -45,11 +45,7 @@ const CustomMarker = (props) => {
       clusterer={clusterer}
     >
       {showWindowInfo ? (
-        <InfoWindow
-          onCloseClick={handleCloseInfo}
-          position={getLatLng(props)}
-          options={{ disableAutoPan: true }}
-        >
+        <InfoWindow onCloseClick={handleCloseInfo} position={getLatLng(props)}>
           <Card {...props} />
         </InfoWindow>
       ) : null}
