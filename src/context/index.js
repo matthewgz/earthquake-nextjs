@@ -13,7 +13,11 @@ const Provider = (props) => {
 
   const [minMagnitude, setMinMagnitude] = useState(MIN_MAGNITUDE)
 
-  const [idEarthquakeInfo, setIdEarthquakeInfo] = useState(null)
+  const [marker, setMarker] = useState({
+    id: null,
+    position: null,
+    zoom: 4,
+  })
 
   const [isMobile] = useState(mobile)
 
@@ -27,13 +31,13 @@ const Provider = (props) => {
     showResults,
     minMagnitude,
     dates,
-    idEarthquakeInfo,
     isMobile,
+    marker,
     setShowFilters,
     setShowResults,
     setMinMagnitude,
     setDates,
-    setIdEarthquakeInfo,
+    setMarker,
   }
 
   return <Context.Provider value={value}>{children}</Context.Provider>

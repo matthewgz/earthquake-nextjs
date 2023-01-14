@@ -2,7 +2,6 @@ import React, { useState, useContext, useRef, Children } from 'react'
 import { Context } from 'context/index'
 import { IoIosArrowDown } from 'react-icons/io'
 import useOutsideAlerter from 'hooks/useOutsideAlerter'
-import { map } from 'lodash'
 
 import styled from 'styled-components'
 
@@ -88,7 +87,7 @@ const Select = (props) => {
       </InnerContainer>
       {show && (
         <ListOfOptions>
-          {options && Children.toArray(map(options, renderOptions))}
+          {options && Children.toArray(options.map(renderOptions))}
         </ListOfOptions>
       )}
     </Container>

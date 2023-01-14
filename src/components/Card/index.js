@@ -1,7 +1,8 @@
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useContext } from 'react'
 import moment from 'moment'
 
 import styled from 'styled-components'
+import { Context } from 'context/index'
 
 const Tooltip = styled.div`
   margin: 0;
@@ -82,15 +83,19 @@ const Container = styled.div`
   padding: 16px;
   user-select: none;
   width: 253px;
+  box-sizing: border-box;
 
   ${(props) => props.cursor && `cursor: pointer`};
+  ${(props) =>
+    props.list && props.id === props.currentId && `border: 2px white solid`};
 `
 
 const Card = forwardRef((props, ref) => {
   const { properties, ...rest } = props
+  const { marker } = useContext(Context)
 
   return (
-    <Container ref={ref} {...rest}>
+    <Container ref={ref} {...rest} currentId={marker?.id}>
       <Title>
         <h4>{properties.place}</h4>
         <Tooltip>{properties.place}</Tooltip>

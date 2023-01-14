@@ -1,4 +1,4 @@
-import { useReducer, useContext, useEffect, useRef, useState } from 'react'
+import { useReducer, useContext, useEffect, useRef } from 'react'
 import Helmet from 'components/Helmet'
 import Header from 'components/Header'
 import Results from 'components/Results'
@@ -6,7 +6,7 @@ import GoogleMaps from 'components/GoogleMaps'
 import { Context } from 'context/index'
 import { MIN_MAGNITUDE, PER_PAGE, TYPES } from 'utils/constants'
 import getUrlAPI from 'utils/getUrlAPI'
-import { isEqual } from 'lodash'
+import isEqual from 'lodash.isequal'
 
 import styled from 'styled-components'
 

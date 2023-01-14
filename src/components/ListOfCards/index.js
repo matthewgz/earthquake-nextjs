@@ -1,6 +1,6 @@
 import React, { Children, useContext } from 'react'
-import { map } from 'lodash'
 import Card from 'components/Card'
+import getLatLng from 'utils/getLatLng'
 import { Context } from 'context/index'
 
 import styled from 'styled-components'
@@ -18,18 +18,24 @@ const Container = styled.div`
 const ListOfCards = (props) => {
   const { data } = props
 
-  const { setIdEarthquakeInfo } = useContext(Context)
+  const { setMarker } = useContext(Context)
 
   return (
     <Container>
       {Children.toArray(
-        map(data, (item) => {
+        data.map((item) => {
           return (
             <Card
               {...item}
+              list={true}
               cursor={'true'}
               onClick={() => {
-                setIdEarthquakeInfo(item.id)
+                setMarker((prev) => ({
+                  ...prev,
+                  id: item.id,
+                  position: getLatLng(item),
+                  zoom: 4,
+                }))
               }}
             />
           )

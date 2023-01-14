@@ -8,18 +8,20 @@
     "start": "next start"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.17.1",
     "@svgr/webpack": "^5.5.0",
-    "lodash": "^4.17.20",
+    "lodash.isempty": "^4.4.0",
+    "lodash.isequal": "^4.5.0",
     "moment": "^2.29.1",
     "next": "10.0.6",
     "next-useragent": "^2.4.0",
     "react": "17.0.1",
     "react-day-picker": "^7.4.8",
     "react-dom": "17.0.1",
-    "react-google-maps": "^9.4.5",
     "react-icons": "^4.2.0",
     "react-intersection-observer": "^8.31.0",
     "recompose": "^0.30.0",
+    "sharp": "^0.31.3",
     "styled-components": "^5.2.1"
   },
   "devDependencies": {

@@ -4,7 +4,6 @@ import ListOfCards from 'components/ListOfCards'
 import Loader from 'components/Loader'
 import { Context } from 'context/index'
 import { move } from 'styles/keyframes'
-import { isNull } from 'lodash'
 import { useInView } from 'react-intersection-observer'
 
 import styled from 'styled-components'
@@ -52,10 +51,10 @@ const Container = styled.div`
   z-index: 100;
 
   animation: ${(props) => move(props)} ease-out 1s;
-  ${(props) => !isNull(props.fin?.right) && `right: ${props.fin?.right}`};
-  ${(props) => !isNull(props.fin?.left) && `left: ${props.fin?.left}`};
-  ${(props) => !isNull(props.fin?.top) && `top: ${props.fin?.top}`};
-  ${(props) => !isNull(props.fin?.bottom) && `bottom: ${props.fin?.bottom}`};
+  ${(props) => props.fin?.right && `right: ${props.fin?.right}`};
+  ${(props) => props.fin?.left && `left: ${props.fin?.left}`};
+  ${(props) => props.fin?.top && `top: ${props.fin?.top}`};
+  ${(props) => props.fin?.bottom && `bottom: ${props.fin?.bottom}`};
 `
 
 const show = {

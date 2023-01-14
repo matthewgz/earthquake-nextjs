@@ -1,55 +1,58 @@
 import React, { useState, useRef, useEffect, useContext } from 'react'
-import marker from 'public/marker.svg'
+import markerIcon from 'public/marker.svg'
 import getLatLng from 'utils/getLatLng'
 import Card from 'components/Card'
-import { Marker, InfoWindow } from 'react-google-maps'
+import { Marker, InfoWindow } from '@react-google-maps/api'
 import { Context } from 'context/index'
-import { isEqual } from 'lodash'
 
 const CustomMarker = (props) => {
-  const { id } = props
+  const { id, clusterer } = props
 
-  const { idEarthquakeInfo, setIdEarthquakeInfo } = useContext(Context)
+  const { marker, setMarker } = useContext(Context)
 
   const [showWindowInfo, setShowWindowInfo] = useState(false)
 
-  const firstUpdate = useRef(true)
-
-  const handleCloseInfo = (e) => {
-    setIdEarthquakeInfo(null)
-
-    setShowWindowInfo(e)
+  const handleCloseInfo = () => {
+    setMarker({ id: null })
+    setShowWindowInfo(false)
   }
 
   const handleToggleShowInfo = () => {
     setShowWindowInfo(!showWindowInfo)
+    if (showWindowInfo) {
+      setMarker({ id: null, position: undefined })
+    } else {
+      setMarker({
+        id: id,
+        position: undefined,
+      })
+    }
   }
 
   useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false
-
-      return
-    }
-
-    if (isEqual(idEarthquakeInfo, id)) {
+    if (marker?.id === id) {
       setShowWindowInfo(true)
     } else {
       setShowWindowInfo(false)
     }
-  }, [idEarthquakeInfo])
+  }, [marker.id])
 
   return (
     <Marker
       position={getLatLng(props)}
       onClick={handleToggleShowInfo}
-      icon={marker}
+      icon={markerIcon}
+      clusterer={clusterer}
     >
-      {showWindowInfo && (
-        <InfoWindow onCloseClick={() => handleCloseInfo(false)}>
+      {showWindowInfo ? (
+        <InfoWindow
+          onCloseClick={handleCloseInfo}
+          position={getLatLng(props)}
+          options={{ disableAutoPan: true }}
+        >
           <Card {...props} />
         </InfoWindow>
-      )}
+      ) : null}
     </Marker>
   )
 }

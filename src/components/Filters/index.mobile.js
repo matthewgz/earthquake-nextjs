@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import Select from 'components/Select'
 import DatePicker from 'components/DatePicker'
 import { move } from 'styles/keyframes'
-import { isNull } from 'lodash'
 import { Context } from 'context/index'
 
 import styled from 'styled-components'
@@ -20,10 +19,10 @@ const Container = styled.div`
   position: absolute;
 
   animation: ${(props) => move(props)} ease-out 1s;
-  ${(props) => !isNull(props.fin?.right) && `right: ${props.fin?.right}`};
-  ${(props) => !isNull(props.fin?.left) && `left: ${props.fin?.left}`};
-  ${(props) => !isNull(props.fin?.top) && `top: ${props.fin?.top}`};
-  ${(props) => !isNull(props.fin?.bottom) && `bottom: ${props.fin?.bottom}`};
+  ${(props) => props.fin?.right && `right: ${props.fin?.right}`};
+  ${(props) => props.fin?.left && `left: ${props.fin?.left}`};
+  ${(props) => props.fin?.top && `top: ${props.fin?.top}`};
+  ${(props) => props.fin?.bottom && `bottom: ${props.fin?.bottom}`};
 `
 
 const show = {

@@ -1,19 +1,17 @@
 import { keyframes } from 'styled-components'
-import { isNull } from 'lodash'
 
 export const move = (props) => keyframes`
   from {
-    ${!isNull(props.ini?.top) && `top: ${props.ini?.top}`};
-    ${!isNull(props.ini?.right) && `right: ${props.ini?.right}`};
-    ${!isNull(props.ini?.left) && `left: ${props.ini?.left}`};
-    ${!isNull(props.ini?.bottom) && `bottom: ${props.ini?.bottom}`};
+    ${props.ini?.top && `top: ${props.ini?.top}`};
+    ${props.ini?.right && `right: ${props.ini?.right}`};
+    ${props.ini?.left && `left: ${props.ini?.left}`};
+    ${props.ini?.bottom && `bottom: ${props.ini?.bottom}`};
   }
   to {
-    
-    ${!isNull(props.fin?.top) && `top: ${props.fin?.top}`};
-    ${!isNull(props.fin?.right) && `right: ${props.fin?.right}`};
-    ${!isNull(props.fin?.left) && `left: ${props.fin?.left}`};
-    ${!isNull(props.fin?.bottom) && `bottom: ${props.fin?.bottom}`};
+    ${props.fin?.top && `top: ${props.fin?.top}`};
+    ${props.fin?.right && `right: ${props.fin?.right}`};
+    ${props.fin?.left && `left: ${props.fin?.left}`};
+    ${props.fin?.bottom && `bottom: ${props.fin?.bottom}`};
   }
 `
 

@@ -4,7 +4,6 @@ import { FaFilter } from 'react-icons/fa'
 import { Context } from 'context/index'
 import Filters from 'components/Filters'
 import useOutsideAlerter from 'hooks/useOutsideAlerter'
-import { isUndefined } from 'lodash'
 
 import styled from 'styled-components'
 
@@ -44,7 +43,7 @@ const Header = () => {
           height={35}
           priority={true}
         />
-        {isMobile === true || isUndefined(isMobile) ? (
+        {isMobile === true || isMobile === undefined ? (
           <Filter
             size={24}
             color={showFilters ? '#495B73' : '#93AEBF'}
