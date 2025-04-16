@@ -74,7 +74,7 @@ const Select = (props) => {
   }
 
   const renderOptions = (e) => (
-    <Options onClick={() => handleOnClickOption(e)}>
+    <Options onClick={() => handleOnClickOption(e)} key={e._id}>
       <p>{e.value}</p>
     </Options>
   )
@@ -86,9 +86,7 @@ const Select = (props) => {
         <IoIosArrowDown size={32} />
       </InnerContainer>
       {show && (
-        <ListOfOptions>
-          {options && Children.toArray(options.map(renderOptions))}
-        </ListOfOptions>
+        <ListOfOptions>{options && options.map(renderOptions)}</ListOfOptions>
       )}
     </Container>
   )

@@ -1,14 +1,21 @@
-import { useReducer, useContext, useEffect, useRef } from 'react'
-import Helmet from 'components/Helmet'
-import Header from 'components/Header'
-import Results from 'components/Results'
-import GoogleMaps from 'components/GoogleMaps'
-import { Context } from 'context/index'
-import { MIN_MAGNITUDE, PER_PAGE, TYPES } from 'utils/constants'
-import getUrlAPI from 'utils/getUrlAPI'
-import isEqual from 'lodash.isequal'
+'use client'
 
+import { useReducer, useContext, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
+import Helmet from '../Helmet'
+import Header from '../Header'
+import Results from '../Results'
+import { Context } from '../../context/index'
+import { PER_PAGE, TYPES } from '../../utils/constants'
+import getUrlAPI from '../../utils/getUrlAPI'
+import isEqual from 'lodash.isequal'
 import styled from 'styled-components'
+
+// Importar GoogleMaps dinámicamente sin SSR
+const GoogleMaps = dynamic(
+  () => import('../GoogleMaps'),
+  { ssr: false }, // Deshabilita la renderización del servidor
+)
 
 const Container = styled.div`
   position: relative;
@@ -65,50 +72,67 @@ const reducer = (state, action) => {
   }
 }
 
-const Home = (props) => {
-  const { data = [] } = props
+// Función para cargar datos en el cliente
+async function getServerData(dates, minMagnitude) {
+  const URL = getUrlAPI(dates, minMagnitude)
+  const res = await fetch(URL)
+  const data = await res.json()
+  return data?.features || []
+}
 
+export default function ClientHome({ initialData }) {
   const firstUpdate = useRef(true)
-
   const { minMagnitude, dates } = useContext(Context)
-
-  const [state, dispatch] = useReducer(reducer, getInitialState(data))
+  const [state, dispatch] = useReducer(reducer, getInitialState(initialData))
 
   const load = () => {
     dispatch({ type: TYPES.start })
 
     setTimeout(() => {
       const newData = state.allData.slice(state.after, state.after + PER_PAGE)
-
       dispatch({ type: TYPES.loaded, newData, allData: state.allData })
     }, 300)
   }
 
-  useEffect(async () => {
+  useEffect(() => {
     if (firstUpdate.current) {
       firstUpdate.current = false
-
       return
     }
 
-    dispatch({ type: TYPES.start })
+    async function fetchFilteredData() {
+      dispatch({ type: TYPES.start })
+      const data = await getServerData(dates, minMagnitude)
+      dispatch({ type: TYPES.more, allData: data })
+    }
 
-    const URL = getUrlAPI(dates, minMagnitude)
-
-    const res = await fetch(URL)
-
-    const dataRes = await res.json()
-
-    dispatch({ type: TYPES.more, allData: dataRes?.features })
+    fetchFilteredData()
   }, [minMagnitude, dates])
 
   useEffect(() => {
-    if (isEqual(state.allData, data)) {
+    if (isEqual(state.allData, initialData)) {
       return
     }
 
     dispatch({ type: TYPES.reset, allData: state.allData })
-  }, [state.allData])
+  }, [state.allData, initialData])
+
+  if (!initialData || initialData.length === 0) {
+    return (
+      <Container>
+        <Header />
+        <main
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          Cargando...
+        </main>
+      </Container>
+    )
+  }
 
   return (
     <Container>
@@ -116,20 +140,8 @@ const Home = (props) => {
       <Header />
       <main>
         <Results {...state} load={load} />
-        <GoogleMaps isMarkerShown data={state.data} />
+        <GoogleMaps isMarkerShown data={state.allData} />
       </main>
     </Container>
   )
 }
-
-export async function getServerSideProps() {
-  const URL = getUrlAPI({}, MIN_MAGNITUDE)
-
-  const res = await fetch(URL)
-
-  const data = await res.json()
-
-  return { props: { data: data?.features } }
-}
-
-export default Home

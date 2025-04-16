@@ -1,4 +1,6 @@
-import Head from 'next/head'
+'use client'
+
+import { useEffect } from 'react'
 
 const Helmet = (props) => {
   const { title } = props
@@ -6,33 +8,46 @@ const Helmet = (props) => {
   const description =
     'Con esta web podras visualizar sismos en determinado rango de fechas y filtrar por magnitud.'
 
-  return (
-    <Head>
-      <meta charSet="UTF-8" />
-      <title>{title}</title>
-      <meta name="title" content={title} />
-      <meta name="description" content={description} />
+  useEffect(() => {
+    // Actualizar el título dinámicamente en el cliente
+    document.title = title
 
-      <meta name="keywords" content="earthquakes, sismos, terremoto, temblor" />
-      <meta name="author" content="Matthew Rosell" />
-      <link rel="icon" href="/favicon.ico" />
+    // Actualizar otras metaetiquetas si es necesario
+    const metaDescription = document.querySelector('meta[name="description"]')
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description)
+    }
 
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={process.env.NEXT_PUBLIC_ENV_URL_APP} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content="/preview.png" />
+    // Actualizar metaetiquetas Open Graph
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) {
+      ogTitle.setAttribute('content', title)
+    }
 
-      <meta property="twitter:card" content="summary_large_image" />
-      <meta
-        property="twitter:url"
-        content={process.env.NEXT_PUBLIC_ENV_URL_APP}
-      />
-      <meta property="twitter:title" content={title} />
-      <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content="/preview.png" />
-    </Head>
-  )
+    const ogDescription = document.querySelector(
+      'meta[property="og:description"]',
+    )
+    if (ogDescription) {
+      ogDescription.setAttribute('content', description)
+    }
+
+    // Actualizar metaetiquetas Twitter
+    const twitterTitle = document.querySelector(
+      'meta[property="twitter:title"]',
+    )
+    if (twitterTitle) {
+      twitterTitle.setAttribute('content', title)
+    }
+
+    const twitterDescription = document.querySelector(
+      'meta[property="twitter:description"]',
+    )
+    if (twitterDescription) {
+      twitterDescription.setAttribute('content', description)
+    }
+  }, [title])
+
+  return null
 }
 
 export default Helmet

@@ -17,7 +17,7 @@ const Tooltip = styled.div`
   position: absolute;
   top: -24px;
   left: 0;
-  z-index: 100;
+  z-index: 10000;
 
   &:hover {
     transition: opacity 0.5s ease;
@@ -66,7 +66,8 @@ const Label = styled.div`
 
 const Text = styled.p`
   font-size: 14px;
-  margin-top: 8px;
+  margin: 0 !important;
+  margin-top: 8px !important;
 
   & span {
     font-weight: 500;
@@ -79,7 +80,6 @@ const Container = styled.div`
   background-color: #7b92a6;
   border-radius: 4px;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-  height: 101px;
   padding: 16px;
   user-select: none;
   width: 253px;
@@ -87,15 +87,22 @@ const Container = styled.div`
 
   ${(props) => props.cursor && `cursor: pointer`};
   ${(props) =>
-    props.list && props.id === props.currentId && `border: 2px white solid`};
+    props.list && props.$currentid === props.id && `border: 2px white solid`};
 `
 
 const Card = forwardRef((props, ref) => {
-  const { properties, ...rest } = props
+  const { properties, geometry, id, cursor, list, ...restProps } = props
   const { marker } = useContext(Context)
 
   return (
-    <Container ref={ref} {...rest} currentId={marker?.id}>
+    <Container
+      ref={ref}
+      cursor={cursor}
+      list={list}
+      id={id}
+      $currentid={marker?.id}
+      {...restProps}
+    >
       <Title>
         <h4>{properties.place}</h4>
         <Tooltip>{properties.place}</Tooltip>

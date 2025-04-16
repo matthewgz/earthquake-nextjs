@@ -1,0 +1,36 @@
+/* Estilos para asegurar que el contenedor de Leaflet tenga altura completa */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Solución para que los iconos se muestren correctamente */
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  display: block !important;
+}
+
+/* Estilos adicionales para los popups */
+.leaflet-popup-content {
+  margin: 13px;
+  min-width: 200px;
+  background-color: transparent;
+}
+
+.leaflet-popup-content {
+  padding: 0;
+  margin: 0 !important;
+  background-color: transparent;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-tip {
+  background-color: #7b92a6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}

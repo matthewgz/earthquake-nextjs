@@ -1,54 +1,64 @@
-import React, { useState, useRef, useEffect, useContext } from 'react'
-import markerIcon from 'public/marker.svg'
+'use client'
+
+import React, { useEffect, useContext, useMemo, useRef } from 'react'
 import getLatLng from 'utils/getLatLng'
 import Card from 'components/Card'
-import { Marker, InfoWindow } from '@react-google-maps/api'
+import { Marker, Popup } from 'react-leaflet'
 import { Context } from 'context/index'
+import L from 'leaflet'
 
 const CustomMarker = (props) => {
-  const { id, clusterer } = props
-
+  const { id, geometry, ...otherProps } = props
   const { marker, setMarker } = useContext(Context)
+  const markerRef = useRef(null)
 
-  const [showWindowInfo, setShowWindowInfo] = useState(false)
-
-  const handleCloseInfo = () => {
-    setMarker({ id: null })
-    setShowWindowInfo(false)
-  }
+  const customIcon = useMemo(
+    () =>
+      L.icon({
+        iconUrl: '/marker.svg',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+      }),
+    [],
+  )
 
   const handleToggleShowInfo = () => {
-    setShowWindowInfo(!showWindowInfo)
-    if (showWindowInfo) {
+    if (marker?.id === id) {
       setMarker({ id: null, position: undefined })
     } else {
+      const markerPosition = getLatLng(props)
       setMarker({
         id: id,
-        position: undefined,
+        position: markerPosition,
+        zoom: 5,
       })
     }
   }
 
   useEffect(() => {
-    if (marker?.id === id) {
-      setShowWindowInfo(true)
-    } else {
-      setShowWindowInfo(false)
+    if (marker?.id === id && markerRef.current) {
+      setTimeout(() => {
+        markerRef.current.options.eventHandlers.click()
+        markerRef.current.openPopup()
+      }, 100)
     }
-  }, [marker.id])
+  }, [marker?.id, id])
+
+  const position = [getLatLng(props).lat, getLatLng(props).lng]
 
   return (
     <Marker
-      position={getLatLng(props)}
-      onClick={handleToggleShowInfo}
-      icon={markerIcon}
-      clusterer={clusterer}
+      ref={markerRef}
+      position={position}
+      icon={customIcon}
+      eventHandlers={{
+        click: handleToggleShowInfo,
+      }}
     >
-      {showWindowInfo ? (
-        <InfoWindow onCloseClick={handleCloseInfo} position={getLatLng(props)}>
-          <Card {...props} />
-        </InfoWindow>
-      ) : null}
+      <Popup>
+        <Card {...otherProps} id={id} geometry={geometry} />
+      </Popup>
     </Marker>
   )
 }

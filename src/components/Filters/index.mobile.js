@@ -19,10 +19,10 @@ const Container = styled.div`
   position: absolute;
 
   animation: ${(props) => move(props)} ease-out 1s;
-  ${(props) => props.fin?.right && `right: ${props.fin?.right}`};
-  ${(props) => props.fin?.left && `left: ${props.fin?.left}`};
-  ${(props) => props.fin?.top && `top: ${props.fin?.top}`};
-  ${(props) => props.fin?.bottom && `bottom: ${props.fin?.bottom}`};
+  ${(props) => props.$fin?.right && `right: ${props.$fin?.right}`};
+  ${(props) => props.$fin?.left && `left: ${props.$fin?.left}`};
+  ${(props) => props.$fin?.top && `top: ${props.$fin?.top}`};
+  ${(props) => props.$fin?.bottom && `bottom: ${props.$fin?.bottom}`};
 `
 
 const show = {
@@ -73,7 +73,7 @@ const FiltersMobile = (props) => {
   }, [showFilters])
 
   return (
-    <Container {...animation}>
+    <Container $fin={animation.fin}>
       <Select />
       <DatePicker
         title="Desde"

@@ -8,8 +8,3 @@ export const TYPES = {
   more: 'MORE',
   reset: 'RESET',
 }
-
-export const GOOGLE_MAPS_URL = `https://maps.googleapis.com/maps/api/js?${
-  process.env.NEXT_PUBLIC_ENV_GOOGLEMAPS_API &&
-  `key=${process.env.NEXT_PUBLIC_ENV_GOOGLEMAPS_API}&`
-}v=3.exp&libraries=geometry,drawing,places`

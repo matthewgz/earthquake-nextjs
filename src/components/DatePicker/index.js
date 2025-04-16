@@ -1,8 +1,6 @@
 import React, { useState, useRef, useContext } from 'react'
 import { MdDateRange } from 'react-icons/md'
 import { Context } from 'context/index'
-import Calendar from 'components/Calendar'
-import useOutsideAlerter from 'hooks/useOutsideAlerter'
 import moment from 'moment'
 
 import styled from 'styled-components'
@@ -17,6 +15,7 @@ const InnerContainer = styled.div`
   justify-content: flex-end;
   padding: 0 16px;
   position: relative;
+  cursor: pointer;
 `
 
 const Span = styled.span`
@@ -37,40 +36,46 @@ const Container = styled.div`
   margin-top: 16px;
 `
 
+const NativeDateInput = styled.input`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+`
+
 const DatePicker = (props) => {
   const { title, onDayClick, ...rest } = props
 
   const { setShowFilters } = useContext(Context)
 
-  const [showCalendar, setShowCalendar] = useState(false)
+  const dateInputRef = useRef(null)
 
-  const ref = useRef(null)
+  const handleDateChange = (e) => {
+    const selectedDate = new Date(e.target.value)
+    onDayClick(selectedDate)
+    setShowFilters(false)
+  }
 
-  useOutsideAlerter(ref, setShowCalendar)
-
-  const handleToggleCalendar = () => {
-    setShowCalendar(!showCalendar)
+  const handleContainerClick = () => {
+    dateInputRef.current.showPicker()
   }
 
   return (
-    <Container ref={ref}>
-      <InnerContainer onClick={handleToggleCalendar}>
+    <Container>
+      <InnerContainer onClick={handleContainerClick}>
         <Span>{title}:</Span>
         <Text>{moment(rest.selectedDays).format('DD-MM-YYYY')}</Text>
         <MdDateRange size={32} />
-      </InnerContainer>
-      {showCalendar && (
-        <Calendar
-          onDayClick={(...props) => {
-            onDayClick(...props)
-
-            setShowCalendar(false)
-
-            setShowFilters(false)
-          }}
-          {...rest}
+        <NativeDateInput
+          type="date"
+          ref={dateInputRef}
+          onChange={handleDateChange}
+          value={moment(rest.selectedDays).format('YYYY-MM-DD')}
         />
-      )}
+      </InnerContainer>
     </Container>
   )
 }

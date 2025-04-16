@@ -48,13 +48,13 @@ const Container = styled.div`
   border-radius: 0px 8px 8px 0px;
   position: absolute;
   width: 285px;
-  z-index: 100;
+  z-index: 10000;
 
   animation: ${(props) => move(props)} ease-out 1s;
-  ${(props) => props.fin?.right && `right: ${props.fin?.right}`};
-  ${(props) => props.fin?.left && `left: ${props.fin?.left}`};
-  ${(props) => props.fin?.top && `top: ${props.fin?.top}`};
-  ${(props) => props.fin?.bottom && `bottom: ${props.fin?.bottom}`};
+  ${(props) => props.$fin?.right && `right: ${props.$fin?.right}`};
+  ${(props) => props.$fin?.left && `left: ${props.$fin?.left}`};
+  ${(props) => props.$fin?.top && `top: ${props.$fin?.top}`};
+  ${(props) => props.$fin?.bottom && `bottom: ${props.$fin?.bottom}`};
 `
 
 const show = {
@@ -125,15 +125,13 @@ const Results = (props) => {
   }, [isMobile])
 
   return (
-    <Container {...animation}>
+    <Container $fin={animation.fin}>
       <InnerContainer>
         <Ribbon />
         <p>{total} resultados...</p>
         <ListOfCards data={data} />
         {loading && <Loader />}
-        {!loading && more && (
-          <div ref={ref} style={{ background: 'red' }}></div>
-        )}
+        {!loading && more && <div ref={ref}></div>}
       </InnerContainer>
     </Container>
   )

@@ -1,12 +1,12 @@
+'use client'
+
 import React, { createContext, useState } from 'react'
 import moment from 'moment'
-import { MIN_MAGNITUDE } from 'utils/constants'
+import { MIN_MAGNITUDE } from '../utils/constants'
 
 export const Context = createContext(null)
 
-const Provider = (props) => {
-  const { children, isMobile: mobile } = props
-
+export const Provider = ({ children, isMobile: mobile }) => {
   const [showFilters, setShowFilters] = useState(false)
 
   const [showResults, setShowResults] = useState(false)
@@ -42,7 +42,4 @@ const Provider = (props) => {
 
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
-export default {
-  Provider,
-  Consumer: Context.Consumer,
-}
+export default Context

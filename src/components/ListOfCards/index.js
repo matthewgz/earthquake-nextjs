@@ -1,4 +1,4 @@
-import React, { Children, useContext } from 'react'
+import React, { useContext } from 'react'
 import Card from 'components/Card'
 import getLatLng from 'utils/getLatLng'
 import { Context } from 'context/index'
@@ -22,25 +22,24 @@ const ListOfCards = (props) => {
 
   return (
     <Container>
-      {Children.toArray(
-        data.map((item) => {
-          return (
-            <Card
-              {...item}
-              list={true}
-              cursor={'true'}
-              onClick={() => {
-                setMarker((prev) => ({
-                  ...prev,
-                  id: item.id,
-                  position: getLatLng(item),
-                  zoom: 4,
-                }))
-              }}
-            />
-          )
-        }),
-      )}
+      {data.map((item) => {
+        return (
+          <Card
+            key={item.id}
+            {...item}
+            list="true"
+            cursor={'true'}
+            onClick={() => {
+              setMarker((prev) => ({
+                ...prev,
+                id: item.id,
+                position: getLatLng(item),
+                zoom: 4,
+              }))
+            }}
+          />
+        )
+      })}
     </Container>
   )
 }
