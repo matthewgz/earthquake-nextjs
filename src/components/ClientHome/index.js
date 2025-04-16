@@ -19,7 +19,7 @@ const GoogleMaps = dynamic(
 
 const Container = styled.div`
   position: relative;
-  height: 100vh;
+  height: 100dvh;
 
   & main {
     position: absolute;
