@@ -117,7 +117,7 @@ export default function ClientHome({ initialData }) {
     dispatch({ type: TYPES.reset, allData: state.allData })
   }, [state.allData, initialData])
 
-  if (!initialData || initialData.length === 0) {
+  if (!state || state.length === 0) {
     return (
       <Container>
         <Header />
