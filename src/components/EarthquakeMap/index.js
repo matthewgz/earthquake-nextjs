@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useContext, useEffect } from 'react'
-import CustomMarker from 'components/CustomMarker'
-import { Context } from 'context/index'
 import isEmpty from 'lodash.isempty'
-import getLatLng from 'utils/getLatLng'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
+
+import CustomMarker from 'components/CustomMarker'
+import { Context } from 'context/index'
+import getLatLng from 'utils/getLatLng'
 import 'leaflet/dist/leaflet.css'
 
 const containerStyle = {
@@ -27,7 +28,7 @@ function MapController({ marker }) {
   return null
 }
 
-const GoogleMaps = (props) => {
+const EarthquakeMap = (props) => {
   const { marker } = useContext(Context)
   const { data } = props
 
@@ -65,4 +66,4 @@ const GoogleMaps = (props) => {
   )
 }
 
-export default GoogleMaps
+export default EarthquakeMap

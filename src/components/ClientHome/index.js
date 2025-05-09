@@ -2,20 +2,17 @@
 
 import { useReducer, useContext, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import isEqual from 'lodash.isequal'
+import styled from 'styled-components'
+
 import Helmet from '../Helmet'
 import Header from '../Header'
 import Results from '../Results'
 import { Context } from '../../context/index'
 import { PER_PAGE, TYPES } from '../../utils/constants'
 import getUrlAPI from '../../utils/getUrlAPI'
-import isEqual from 'lodash.isequal'
-import styled from 'styled-components'
 
-// Importar GoogleMaps dinámicamente sin SSR
-const GoogleMaps = dynamic(
-  () => import('../GoogleMaps'),
-  { ssr: false }, // Deshabilita la renderización del servidor
-)
+const EarthquakeMap = dynamic(() => import('../EarthquakeMap'), { ssr: false })
 
 const Container = styled.div`
   position: relative;
@@ -140,7 +137,7 @@ export default function ClientHome({ initialData }) {
       <Header />
       <main>
         <Results {...state} load={load} />
-        <GoogleMaps isMarkerShown data={state.allData} />
+        <EarthquakeMap isMarkerShown data={state.allData} />
       </main>
     </Container>
   )
