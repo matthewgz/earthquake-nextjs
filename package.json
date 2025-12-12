@@ -3,27 +3,27 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "@svgr/webpack": "^8.1.0",
-    "leaflet": "^1.9.4",
-    "lodash.isempty": "^4.4.0",
-    "lodash.isequal": "^4.5.0",
-    "moment": "^2.30.1",
-    "next": "15.3.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "react-icons": "^5.5.0",
-    "react-intersection-observer": "^9.16.0",
-    "react-leaflet": "^5.0.0",
-    "styled-components": "^6.1.17",
-    "ua-parser-js": "^2.0.3"
+    "@svgr/webpack": "8.1.0",
+    "leaflet": "1.9.4",
+    "lodash.isempty": "4.4.0",
+    "lodash.isequal": "4.5.0",
+    "moment": "2.30.1",
+    "next": "16.0.10",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-icons": "5.5.0",
+    "react-intersection-observer": "10.0.0",
+    "react-leaflet": "5.0.0",
+    "styled-components": "6.1.19",
+    "ua-parser-js": "2.0.7"
   },
   "devDependencies": {
-    "babel-plugin-styled-components": "^2.1.4",
-    "url-loader": "^4.1.1"
+    "babel-plugin-styled-components": "2.1.4",
+    "url-loader": "4.1.1"
   }
 }
