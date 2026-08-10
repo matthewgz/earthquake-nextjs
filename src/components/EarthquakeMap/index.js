@@ -85,9 +85,13 @@ function MapController({
   detailStatus,
   drawerWidth,
   layerBounds,
+  onPopupClose,
 }) {
   const map = useMap()
   const hasSize = useMapHasSize(map)
+
+  // Último conjunto de resultados que se encuadró, para no repetirlo.
+  const fittedFeatures = useRef(null)
 
   useEffect(() => {
     if (marker?.position) {
@@ -137,9 +141,18 @@ function MapController({
    * región dejaba la vista mirando a otro lado.
    */
   useEffect(() => {
-    if (!hasSize || marker?.position || features.length === 0) {
+    if (!hasSize || features.length === 0 || marker?.position) {
       return
     }
+
+    // Solo al cambiar el conjunto de resultados. Sin esta guarda, cerrar el
+    // popup de un sismo también reencuadraba el mapa sobre todos los
+    // resultados, que es el tirón de zoom que se veía al cerrar.
+    if (fittedFeatures.current === features) {
+      return
+    }
+
+    fittedFeatures.current = features
 
     const bounds = L.latLngBounds(
       features.map((item) => {
@@ -151,6 +164,31 @@ function MapController({
 
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 8 })
   }, [map, hasSize, features, marker?.position])
+
+  /**
+   * `popupclose` lo emite el **mapa**, no la capa popup, así que engancharlo al
+   * componente `<Popup>` no funcionaba: al cerrar el popup haciendo clic fuera,
+   * Leaflet lo quitaba del DOM pero el estado de React seguía con el sismo
+   * seleccionado. Volver a pulsar ese mismo marker se interpretaba entonces
+   * como «deseleccionar», y el mapa se reencuadraba sobre todos los resultados.
+   */
+  /**
+   * Cerrar al hacer clic fuera.
+   *
+   * Se escucha `click` del mapa y **no** `popupclose`, aunque este último
+   * parezca lo natural. Motivo comprobado: react-leaflet emite un ciclo
+   * `popupopen → popupclose → popupopen` por su cuenta al reabrir el popup
+   * durante el ciclo de vida, y ese cierre es indistinguible de uno provocado
+   * por el usuario. El `click` del mapa sí es inequívoco: Leaflet no lo emite
+   * cuando se pulsa un marker ni el propio popup, solo el fondo del mapa.
+   */
+  useEffect(() => {
+    map.on('click', onPopupClose)
+
+    return () => {
+      map.off('click', onPopupClose)
+    }
+  }, [map, onPopupClose])
 
   return null
 }
@@ -171,6 +209,22 @@ const EarthquakeMap = (props) => {
   // envolverlo hacía que el compilador de React descartara la memoización de
   // todo el componente.
   const selected = markerId ? data.find((item) => item.id === markerId) : null
+
+  /**
+   * Memoizado a propósito. Con un array nuevo en cada render, react-leaflet
+   * volvía a llamar a `openPopup`, que cierra el popup anterior antes de abrir
+   * el nuevo: el popup se reabría constantemente y emitía un `popupclose`
+   * espurio por cada render, indistinguible de un cierre real del usuario.
+   */
+  const selectedPosition = useMemo(() => {
+    if (!selected) {
+      return null
+    }
+
+    const { lat, lng } = getLatLng(selected)
+
+    return [lat, lng]
+  }, [selected])
 
   // Una petición por sismo abierto, cacheada. No se pide para la lista.
   const detail = useEarthquakeDetail(markerId)
@@ -209,7 +263,13 @@ const EarthquakeMap = (props) => {
   )
 
   const closePopup = useCallback(() => {
-    setMarker((prev) => ({ id: null, position: null, zoom: prev.zoom }))
+    setMarker((prev) =>
+      // Devolver el mismo objeto cuando ya no hay nada seleccionado hace que
+      // React descarte el re-render. Importa porque Leaflet emite
+      // `popupclose` también al desmontar el popup, y sin esto cada cierre
+      // provocaría un render extra de todos los consumidores del contexto.
+      prev.id === null ? prev : { id: null, position: null, zoom: prev.zoom },
+    )
   }, [setMarker])
 
   const hasContours = Boolean(detail.detail?.intensityContours)
@@ -273,6 +333,7 @@ const EarthquakeMap = (props) => {
           detailStatus={detail.status}
           drawerWidth={showResults ? RESULTS_DRAWER_WIDTH : 0}
           layerBounds={layerBounds}
+          onPopupClose={closePopup}
         />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -330,9 +391,14 @@ const EarthquakeMap = (props) => {
         {selected && (
           <Popup
             ref={popupRef}
-            position={[getLatLng(selected).lat, getLatLng(selected).lng]}
-            eventHandlers={{ popupclose: closePopup }}
+            position={selectedPosition}
             maxWidth={320}
+            /*
+              Se sustituye la aspa de Leaflet por una propia: la suya cierra el
+              popup en el DOM sin avisar a React, dejando el sismo marcado como
+              seleccionado. Además su `title` viene en inglés.
+            */
+            closeButton={false}
             /*
               El auto-encuadre de Leaflet se desactiva a propósito: solo corre
               al abrir el popup, no sabe nada del cajón de resultados que lo
@@ -341,7 +407,12 @@ const EarthquakeMap = (props) => {
             */
             autoPan={false}
           >
-            <Card {...selected} $detailed detail={detail} />
+            <Card
+              {...selected}
+              $detailed
+              detail={detail}
+              onClose={closePopup}
+            />
           </Popup>
         )}
       </MapContainer>

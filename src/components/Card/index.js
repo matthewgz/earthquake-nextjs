@@ -45,6 +45,9 @@ const Title = styled.div`
   align-items: center;
   position: relative;
 
+  /* Deja sitio al botón de cerrar, que si no se solapa con la magnitud. */
+  ${(props) => props.$withClose && `padding-right: 32px;`}
+
   h4 {
     margin: 0;
     padding: 0;
@@ -95,6 +98,7 @@ const Container = styled.div`
   border-radius: 4px;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
   padding: 16px;
+  position: relative;
   user-select: none;
   width: 253px;
   box-sizing: border-box;
@@ -115,6 +119,30 @@ const Container = styled.div`
     overflow-y: auto;
     overscroll-behavior: contain;
   `};
+`
+
+const CloseButton = styled.button`
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 7px;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 1;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #e5edef;
+    outline-offset: 2px;
+  }
 `
 
 const Badges = styled.div`
@@ -185,6 +213,7 @@ const Card = forwardRef((props, ref) => {
     $inList,
     $detailed,
     detail,
+    onClose,
     ...restProps
   } = props
   const { marker } = useContext(Context)
@@ -208,7 +237,16 @@ const Card = forwardRef((props, ref) => {
       $detailed={$detailed}
       {...restProps}
     >
-      <Title>
+      {onClose && (
+        <CloseButton
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar detalle"
+        >
+          ×
+        </CloseButton>
+      )}
+      <Title $withClose={Boolean(onClose)}>
         <h4>{properties.place}</h4>
         <Tooltip>{properties.place}</Tooltip>
         <Label aria-label={`Magnitud ${magnitude}`}>{magnitude}</Label>
