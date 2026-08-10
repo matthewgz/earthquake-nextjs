@@ -1,8 +1,12 @@
 import React, { forwardRef, useContext } from 'react'
-import moment from 'moment'
 
 import styled from 'styled-components'
 import { Context } from 'context/index'
+import {
+  formatEventDate,
+  formatEventTime,
+  toDateTimeAttribute,
+} from 'utils/formatters'
 
 const Tooltip = styled.div`
   margin: 0;
@@ -85,39 +89,62 @@ const Container = styled.div`
   width: 253px;
   box-sizing: border-box;
 
-  ${(props) => props.cursor && `cursor: pointer`};
-  ${(props) =>
-    props.list && props.$currentid === props.id && `border: 2px white solid`};
+  ${(props) => props.$clickable && `cursor: pointer`};
+  ${(props) => props.$selected && `border: 2px white solid`};
 `
 
 const Card = forwardRef((props, ref) => {
-  const { properties, geometry, id, cursor, list, ...restProps } = props
+  // `$clickable` y `$selected` son props transitorias: sin el prefijo `$`,
+  // styled-components v6 las reenvía al DOM y React avisa de atributos
+  // desconocidos.
+  const { properties, geometry, id, $clickable, $inList, ...restProps } = props
   const { marker } = useContext(Context)
+
+  const magnitude = Number.isFinite(properties?.mag)
+    ? properties.mag.toFixed(1)
+    : '—'
 
   return (
     <Container
       ref={ref}
-      cursor={cursor}
-      list={list}
-      id={id}
-      $currentid={marker?.id}
+      $clickable={$clickable}
+      $selected={$inList && marker?.id === id}
       {...restProps}
     >
       <Title>
         <h4>{properties.place}</h4>
         <Tooltip>{properties.place}</Tooltip>
-        <Label>{properties.mag.toFixed(1)}</Label>
+        <Label aria-label={`Magnitud ${magnitude}`}>{magnitude}</Label>
       </Title>
       <Text>
         <span>Fecha: </span>
-        {moment(properties.time).format('DD/MM/YYYY')}
+        {/*
+          `Card` también se renderiza en el servidor, donde la zona horaria es
+          la del host: formatear en hora local produce necesariamente un texto
+          distinto al del cliente. `suppressHydrationWarning` es el mecanismo
+          previsto por React para este caso concreto, y el atributo `dateTime`
+          conserva el instante exacto en ISO para lectores y buscadores.
+        */}
+        <time
+          dateTime={toDateTimeAttribute(properties.time)}
+          suppressHydrationWarning
+        >
+          {formatEventDate(properties.time)}
+        </time>
       </Text>
       <Text>
         <span>Hora: </span>
-        {moment(properties.time).format('LT')}
+        <time
+          dateTime={toDateTimeAttribute(properties.time)}
+          suppressHydrationWarning
+        >
+          {formatEventTime(properties.time)}
+        </time>
       </Text>
     </Container>
   )
 })
+
+Card.displayName = 'Card'
 
 export default Card

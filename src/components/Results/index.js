@@ -4,6 +4,7 @@ import ListOfCards from 'components/ListOfCards'
 import Loader from 'components/Loader'
 import { Context } from 'context/index'
 import { move } from 'styles/keyframes'
+import { getTimeZoneLabel } from 'utils/formatters'
 import { useInView } from 'react-intersection-observer'
 
 import styled from 'styled-components'
@@ -35,11 +36,19 @@ const InnerContainer = styled.div`
   ::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
+`
+
+const Summary = styled.div`
+  margin-bottom: 24px;
+  text-align: center;
 
   & > p {
     font-size: 14px;
-    margin-bottom: 24px;
-    text-align: center;
+  }
+
+  & > small {
+    font-size: 11px;
+    opacity: 0.75;
   }
 `
 
@@ -82,6 +91,8 @@ const hide = {
     left: '0px',
   },
 }
+
+const timeZoneLabel = getTimeZoneLabel()
 
 const Results = (props) => {
   const { data, loading, more, load, total } = props
@@ -128,7 +139,16 @@ const Results = (props) => {
     <Container $fin={animation.fin}>
       <InnerContainer>
         <Ribbon />
-        <p>{total} resultados...</p>
+        <Summary>
+          <p>{total} resultados...</p>
+          {/*
+            Las horas de los sismos se muestran en la zona local del navegador,
+            pero USGS las entrega en UTC. Sin esta etiqueta no hay forma de
+            saber en qué zona se está leyendo. Va una sola vez aquí, y no en
+            cada tarjeta, para no ensuciar la lista.
+          */}
+          <small suppressHydrationWarning>Horas en {timeZoneLabel}</small>
+        </Summary>
         <ListOfCards data={data} />
         {loading && <Loader />}
         {!loading && more && <div ref={ref}></div>}

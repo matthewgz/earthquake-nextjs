@@ -27,8 +27,8 @@ const ListOfCards = (props) => {
           <Card
             key={item.id}
             {...item}
-            list="true"
-            cursor={'true'}
+            $inList
+            $clickable
             onClick={() => {
               setMarker((prev) => ({
                 ...prev,
