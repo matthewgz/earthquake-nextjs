@@ -3,13 +3,24 @@
 import React, {
   createContext,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
 } from 'react'
 
 import { MIN_MAGNITUDE } from '../utils/constants'
-import { clampToToday, compareISO, todayISO } from '../utils/dateRange'
+import {
+  clampToToday,
+  compareISO,
+  sanitizeRange,
+  todayISO,
+} from '../utils/dateRange'
+import {
+  EMPTY_FILTERS,
+  buildFilterSearch,
+  parseFilterParams,
+} from '../utils/filterParams'
 
 export const Context = createContext(null)
 
@@ -40,12 +51,51 @@ const subscribeToViewport = (onChange) => {
 
 const getIsMobileSnapshot = () => window.matchMedia(MOBILE_QUERY).matches
 
+/**
+ * Filtros leídos de la URL.
+ *
+ * Se usa `window.location` y no `useSearchParams` a propósito: ese hook obliga
+ * a envolver el consumidor en `<Suspense>` y hace que la ruta se resuelva en
+ * cliente, cuando aquí el componente de servidor no depende para nada de los
+ * parámetros.
+ *
+ * `getSnapshot` tiene que devolver siempre la misma referencia mientras el
+ * querystring no cambie; si construyera un objeto nuevo en cada llamada,
+ * `useSyncExternalStore` entraría en un bucle de renders.
+ */
+let cachedSearch = null
+let cachedFilters = EMPTY_FILTERS
+
+const getUrlFiltersSnapshot = () => {
+  const { search } = window.location
+
+  if (search !== cachedSearch) {
+    cachedSearch = search
+    cachedFilters = parseFilterParams(search)
+  }
+
+  return cachedFilters
+}
+
+const getUrlFiltersServerSnapshot = () => EMPTY_FILTERS
+
+const subscribeToHistory = (onChange) => {
+  window.addEventListener('popstate', onChange)
+
+  return () => window.removeEventListener('popstate', onChange)
+}
+
 export const Provider = ({ children, isMobile: mobile }) => {
   const [showFilters, setShowFilters] = useState(false)
 
   const [showResults, setShowResults] = useState(false)
 
-  const [minMagnitude, setMinMagnitude] = useState(MIN_MAGNITUDE)
+  /**
+   * Como con el rango: el estado guarda solo lo que el usuario eligió de forma
+   * explícita, y mientras tanto se cae a la URL y luego al valor por defecto.
+   * Así no hace falta sincronizar nada con un efecto.
+   */
+  const [selectedMagnitude, setMinMagnitude] = useState(null)
 
   const [marker, setMarker] = useState({
     id: null,
@@ -74,6 +124,15 @@ export const Provider = ({ children, isMobile: mobile }) => {
     getTodayServerSnapshot,
   )
 
+  const urlFilters = useSyncExternalStore(
+    subscribeToHistory,
+    getUrlFiltersSnapshot,
+    getUrlFiltersServerSnapshot,
+  )
+
+  const minMagnitude =
+    selectedMagnitude ?? urlFilters.minMagnitude ?? MIN_MAGNITUDE
+
   /**
    * Guarda únicamente lo que el usuario eligió explícitamente. Mientras no haya
    * elegido nada, el rango efectivo cae a `today`, que es `null` en el servidor
@@ -84,13 +143,19 @@ export const Provider = ({ children, isMobile: mobile }) => {
    */
   const [selectedRange, setSelectedRange] = useState({ start: null, end: null })
 
-  const range = useMemo(
-    () => ({
-      start: selectedRange.start ?? today,
-      end: selectedRange.end ?? today,
-    }),
-    [selectedRange, today],
-  )
+  const range = useMemo(() => {
+    const start = selectedRange.start ?? urlFilters.start ?? today
+    const end = selectedRange.end ?? urlFilters.end ?? today
+
+    // Sin fechas todavía (primer render en servidor) no hay nada que sanear.
+    if (!start || !end) {
+      return { start, end }
+    }
+
+    // La URL puede venir manipulada o con un rango invertido; se normaliza en
+    // silencio en lugar de propagar un estado imposible.
+    return sanitizeRange({ start, end })
+  }, [selectedRange, urlFilters, today])
 
   /**
    * Al mover un extremo por encima del otro, arrastra el otro con él en lugar
@@ -120,6 +185,31 @@ export const Provider = ({ children, isMobile: mobile }) => {
       }
     })
   }, [])
+
+  /**
+   * Refleja los filtros en la URL para que la vista sea compartible y sobreviva
+   * a un refresco.
+   *
+   * Se usa `replaceState` en lugar de `router.push`: cada paso intermedio de
+   * una interacción rápida se convertiría en una entrada de historial, y además
+   * el componente de servidor no depende de estos parámetros, así que una
+   * navegación de Next solo provocaría una ida y vuelta inútil.
+   */
+  useEffect(() => {
+    if (!range.start || !range.end) {
+      return
+    }
+
+    const search = buildFilterSearch({ minMagnitude, ...range })
+
+    if (search !== window.location.search) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${search}`,
+      )
+    }
+  }, [minMagnitude, range])
 
   /**
    * Sin memoizar, `value` era un objeto nuevo en cada render y hacía que TODOS
