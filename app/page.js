@@ -1,6 +1,7 @@
 import ClientHome from '../src/components/ClientHome'
 import { MIN_MAGNITUDE } from '../src/utils/constants'
 import { todayISO } from '../src/utils/dateRange'
+import { projectFeatures } from '../src/utils/fetchEarthquakes'
 import { buildQuery, getQueryUrl } from '../src/utils/usgsApi'
 
 async function getEarthquakeData(query) {
@@ -15,7 +16,9 @@ async function getEarthquakeData(query) {
 
     const data = await res.json()
 
-    return data?.features ?? []
+    // Se proyecta con la misma función que usa el cliente, para que la forma de
+    // los datos iniciales y la de los refetch sea idéntica.
+    return projectFeatures(data?.features)
   } catch {
     // Degradar a vacío en vez de propagar: un fallo de USGS no debería tumbar
     // la página entera con un 500. El cliente reintentará al cambiar filtros.
@@ -38,5 +41,11 @@ export default async function Home() {
 
   const initialData = await getEarthquakeData(initialQuery)
 
-  return <ClientHome initialData={initialData} initialQuery={initialQuery} />
+  return (
+    <ClientHome
+      initialData={initialData}
+      initialQuery={initialQuery}
+      initialTotal={initialData.length}
+    />
+  )
 }

@@ -2,8 +2,11 @@ import React, { useState, useEffect, useContext, useRef } from 'react'
 import Ribbon from 'components/Ribbon'
 import ListOfCards from 'components/ListOfCards'
 import Loader from 'components/Loader'
+import StatusMessage from 'components/StatusMessage'
 import { Context } from 'context/index'
+import { STATUS } from 'hooks/useEarthquakes'
 import { move } from 'styles/keyframes'
+import { MAX_RESULTS } from 'utils/constants'
 import { getTimeZoneLabel } from 'utils/formatters'
 import { useInView } from 'react-intersection-observer'
 
@@ -94,8 +97,11 @@ const hide = {
 
 const timeZoneLabel = getTimeZoneLabel()
 
+const formatCount = (value) => new Intl.NumberFormat('es-419').format(value)
+
 const Results = (props) => {
-  const { data, loading, more, load, total } = props
+  const { data, total, truncated, status, error, hasMore, loadMore, retry } =
+    props
 
   const { showResults, isMobile, setShowResults } = useContext(Context)
 
@@ -103,13 +109,11 @@ const Results = (props) => {
     fin: showResults ? show.fin : hide.fin,
   })
 
-  const { ref, inView, entry } = useInView({
-    threshold: 1,
-  })
-
-  const loader = useRef(load)
+  const { ref, inView } = useInView({ threshold: 1 })
 
   const firstUpdate = useRef(true)
+
+  const isLoading = status === STATUS.loading
 
   useEffect(() => {
     if (firstUpdate.current) {
@@ -122,25 +126,43 @@ const Results = (props) => {
   }, [showResults])
 
   useEffect(() => {
-    if (entry?.isIntersecting) {
-      loader.current()
+    if (inView) {
+      loadMore()
     }
-  }, [inView])
-
-  useEffect(() => {
-    loader.current = load
-  }, [load])
+  }, [inView, loadMore])
 
   useEffect(() => {
     setShowResults(!isMobile)
-  }, [isMobile])
+  }, [isMobile, setShowResults])
+
+  const statusKind =
+    status === STATUS.error
+      ? error?.code
+      : status === STATUS.invalidRange
+        ? 'invalid_range'
+        : status === STATUS.success && data.length === 0
+          ? 'empty'
+          : null
 
   return (
     <Container $fin={animation.fin}>
-      <InnerContainer>
-        <Ribbon />
+      {/*
+        `Ribbon` va fuera de `InnerContainer` justamente porque es el control
+        que vuelve a abrir el panel: si quedara dentro de la región `inert`, con
+        el panel cerrado no se podría accionar.
+      */}
+      <Ribbon />
+      <InnerContainer inert={!showResults}>
         <Summary>
-          <p>{total} resultados...</p>
+          {/*
+            `aria-live` anuncia el nuevo total tras filtrar; antes el cambio
+            era invisible para un lector de pantalla.
+          */}
+          <p aria-live="polite">
+            {truncated
+              ? `Mostrando ${formatCount(data.length ? MAX_RESULTS : 0)} de ${formatCount(total)} sismos`
+              : `${formatCount(total)} resultados...`}
+          </p>
           {/*
             Las horas de los sismos se muestran en la zona local del navegador,
             pero USGS las entrega en UTC. Sin esta etiqueta no hay forma de
@@ -149,9 +171,22 @@ const Results = (props) => {
           */}
           <small suppressHydrationWarning>Horas en {timeZoneLabel}</small>
         </Summary>
-        <ListOfCards data={data} />
-        {loading && <Loader />}
-        {!loading && more && <div ref={ref}></div>}
+
+        {statusKind ? (
+          <StatusMessage
+            kind={statusKind}
+            onRetry={status === STATUS.error ? retry : undefined}
+          />
+        ) : (
+          <ListOfCards data={data} />
+        )}
+
+        {isLoading && <Loader />}
+        {/*
+          El centinela se desmonta mientras carga y al agotarse los resultados;
+          remontarlo es lo que vuelve a armar el IntersectionObserver.
+        */}
+        {!isLoading && hasMore && <div ref={ref} />}
       </InnerContainer>
     </Container>
   )
