@@ -3,33 +3,14 @@
 import React from 'react'
 import { GeoJSON } from 'react-leaflet'
 
-/**
- * Paleta oficial de ShakeMap para la escala Mercalli. Se mantiene igual que la
- * de USGS a propósito: cualquiera que haya visto un mapa suyo reconoce los
- * colores, y reinventarlos solo añadiría confusión.
- */
-const INTENSITY_COLORS = [
-  { max: 2, color: '#bfccff' },
-  { max: 3, color: '#a0e6ff' },
-  { max: 4, color: '#80ffff' },
-  { max: 5, color: '#7aff93' },
-  { max: 6, color: '#ffff00' },
-  { max: 7, color: '#ffc800' },
-  { max: 8, color: '#ff9100' },
-  { max: 9, color: '#ff0000' },
-  { max: Infinity, color: '#c80000' },
-]
-
-const getColor = (value) =>
-  INTENSITY_COLORS.find((step) => value < step.max)?.color ?? '#c80000'
+import { getIntensityColor } from 'utils/earthquakeInfo'
 
 /**
- * Dibuja las líneas de isointensidad del ShakeMap: el área donde se sintió el
- * sismo, y con qué fuerza.
+ * Líneas de isointensidad del ShakeMap: hasta dónde llegó el movimiento y con
+ * qué fuerza, **según el modelo** de USGS a partir de los sismógrafos.
  *
  * Son `MultiLineString`, no polígonos, así que se trazan como contornos y no
- * como manchas rellenas. Van por debajo de los markers en su propio panel para
- * no interceptar los clics.
+ * como manchas. Van sin interactividad para no robarle los clics a los markers.
  */
 const IntensityContours = ({ data }) => {
   if (!data?.features?.length) {
@@ -43,7 +24,7 @@ const IntensityContours = ({ data }) => {
       data={data}
       interactive={false}
       style={(feature) => ({
-        color: getColor(feature.properties.value),
+        color: getIntensityColor(feature.properties.value),
         weight: 2,
         opacity: 0.9,
       })}

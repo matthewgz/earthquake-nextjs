@@ -4,16 +4,21 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 import { MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
+import styled from 'styled-components'
 
 import Card from 'components/Card'
 import CustomMarker from 'components/CustomMarker'
+import FeltReports from 'components/FeltReports'
 import IntensityContours from 'components/IntensityContours'
+import IntensityLegend from 'components/IntensityLegend'
+import LayerToggles from 'components/LayerToggles'
 import { Context } from 'context/index'
 import useEarthquakeDetail from 'hooks/useEarthquakeDetail'
 import getLatLng from 'utils/getLatLng'
@@ -26,6 +31,14 @@ const containerStyle = {
   height: '100%',
   width: '100%',
 }
+
+// Contexto de posicionamiento para la leyenda y el control de capas, que se
+// superponen al mapa.
+const Wrapper = styled.div`
+  height: 100%;
+  position: relative;
+  width: 100%;
+`
 
 // Bolivia: encuadre por defecto cuando no hay datos que mostrar.
 const DEFAULT_CENTER = [-18.4518246, -64.0274937]
@@ -66,7 +79,13 @@ function useMapHasSize(map) {
   return hasSize
 }
 
-function MapController({ marker, features, detailStatus, drawerWidth }) {
+function MapController({
+  marker,
+  features,
+  detailStatus,
+  drawerWidth,
+  layerBounds,
+}) {
   const map = useMap()
   const hasSize = useMapHasSize(map)
 
@@ -80,27 +99,37 @@ function MapController({ marker, features, detailStatus, drawerWidth }) {
   }, [map, marker?.position, marker?.zoom])
 
   /**
-   * El bloque de detalle llega después de abrir el popup y lo hace más alto.
-   * `autoPan` solo se ejecuta al abrirlo, así que sin esto un popup que crece
-   * puede quedar mordido por el borde superior del mapa. `panInside` reencuadra
-   * lo justo, respetando el ancho del cajón de resultados que se le superpone.
+   * Reencuadra al llegar el detalle del sismo abierto.
+   *
+   * Con capas de intensidad se ajusta a su extensión: las celdas de reportes
+   * son de 10 km y al zoom con el que se navega la lista no llegan ni a un
+   * píxel, así que sin esto se dibujan pero no se ven.
+   *
+   * Sin capas basta con desplazar lo justo para que quepa el popup. En ambos
+   * casos se reserva sitio para el cajón de resultados, que se superpone al
+   * mapa y del que Leaflet no sabe nada, y para el popup, que se despliega
+   * hacia arriba y centrado sobre el marker.
    */
   useEffect(() => {
     if (!marker?.position || detailStatus !== 'success') {
       return
     }
 
-    // `panInside` encaja el MARKER, no el popup. Como el popup se despliega
-    // hacia arriba y centrado sobre él, hay que reservar su alto por arriba y
-    // media anchura a cada lado.
     const halfWidth = POPUP_MAX_WIDTH / 2
-
-    map.panInside([marker.position.lat, marker.position.lng], {
+    const padding = {
       paddingTopLeft: [drawerWidth + halfWidth + 24, POPUP_MAX_HEIGHT + 48],
       paddingBottomRight: [halfWidth + 24, 24],
       animate: false,
-    })
-  }, [map, marker?.position, detailStatus, drawerWidth])
+    }
+
+    if (layerBounds?.isValid()) {
+      map.fitBounds(layerBounds, { ...padding, maxZoom: 9 })
+
+      return
+    }
+
+    map.panInside([marker.position.lat, marker.position.lng], padding)
+  }, [map, marker?.position, detailStatus, drawerWidth, layerBounds])
 
   /**
    * Al cambiar el conjunto de resultados sin selección, encuadra todos los
@@ -130,6 +159,11 @@ const EarthquakeMap = (props) => {
   const { data } = props
 
   const { marker, setMarker, showResults } = useContext(Context)
+
+  // Ambas capas visibles por defecto: compararlas —modelo frente a reportes
+  // reales— es justamente lo que aportan.
+  const [showContours, setShowContours] = useState(true)
+  const [showReports, setShowReports] = useState(true)
 
   const markerId = marker?.id
 
@@ -178,82 +212,140 @@ const EarthquakeMap = (props) => {
     setMarker((prev) => ({ id: null, position: null, zoom: prev.zoom }))
   }, [setMarker])
 
-  return (
-    <MapContainer
-      style={containerStyle}
-      center={DEFAULT_CENTER}
-      zoom={DEFAULT_ZOOM}
-    >
-      <MapController
-        marker={marker}
-        features={data}
-        detailStatus={detail.status}
-        drawerWidth={showResults ? RESULTS_DRAWER_WIDTH : 0}
-      />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+  const hasContours = Boolean(detail.detail?.intensityContours)
+  const hasReports = Boolean(detail.detail?.feltReports?.features?.length)
 
+  /**
+   * Extensión conjunta de las capas visibles, para encuadrarlas. Se calcula con
+   * el propio parser de Leaflet en lugar de recorrer las coordenadas a mano,
+   * que con `MultiLineString` y `Polygon` mezclados sería fácil de equivocar.
+   */
+  const layerBounds = useMemo(() => {
+    const visible = [
+      showContours && detail.detail?.intensityContours,
+      showReports && detail.detail?.feltReports,
+    ].filter(Boolean)
+
+    if (!visible.length) {
+      return null
+    }
+
+    return visible.reduce(
+      (acc, data) => acc.extend(L.geoJSON(data).getBounds()),
+      L.latLngBounds([]),
+    )
+  }, [
+    showContours,
+    showReports,
+    detail.detail?.intensityContours,
+    detail.detail?.feltReports,
+  ])
+
+  return (
+    <Wrapper>
       {/*
+        Van fuera de `MapContainer` porque son DOM normal, no capas de Leaflet;
+        se superponen con posicionamiento absoluto sobre el envoltorio.
+      */}
+      <LayerToggles
+        hasContours={hasContours}
+        hasReports={hasReports}
+        showContours={showContours}
+        showReports={showReports}
+        onToggleContours={setShowContours}
+        onToggleReports={setShowReports}
+      />
+      {((hasContours && showContours) || (hasReports && showReports)) && (
+        <IntensityLegend
+          showsContours={hasContours && showContours}
+          showsReports={hasReports && showReports}
+        />
+      )}
+
+      <MapContainer
+        style={containerStyle}
+        center={DEFAULT_CENTER}
+        zoom={DEFAULT_ZOOM}
+      >
+        <MapController
+          marker={marker}
+          features={data}
+          detailStatus={detail.status}
+          drawerWidth={showResults ? RESULTS_DRAWER_WIDTH : 0}
+          layerBounds={layerBounds}
+        />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        {/*
         `chunkedLoading` reparte el alta de markers en varios frames para no
         bloquear el hilo principal cuando llegan cientos de golpe.
       */}
-      <MarkerClusterGroup
-        chunkedLoading
-        maxClusterRadius={50}
-        disableClusteringAtZoom={8}
-      >
-        {data.map((item) => {
-          const { lat, lng } = getLatLng(item)
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={50}
+          disableClusteringAtZoom={8}
+        >
+          {data.map((item) => {
+            const { lat, lng } = getLatLng(item)
 
-          return (
-            <CustomMarker
-              key={item.id}
-              id={item.id}
-              lat={lat}
-              lng={lng}
-              onSelect={handleSelect}
-            />
-          )
-        })}
-      </MarkerClusterGroup>
+            return (
+              <CustomMarker
+                key={item.id}
+                id={item.id}
+                lat={lat}
+                lng={lng}
+                onSelect={handleSelect}
+              />
+            )
+          })}
+        </MarkerClusterGroup>
 
-      {/*
+        {/*
+        Las dos capas del área sentida, antes del popup para quedar por debajo
+        en el orden de pintado. El relleno de reportes va primero para que los
+        contornos del modelo se lean encima.
+      */}
+        {showReports && detail.detail?.feltReports && (
+          <FeltReports
+            key={`reports-${markerId}`}
+            data={detail.detail.feltReports}
+          />
+        )}
+        {showContours && detail.detail?.intensityContours && (
+          <IntensityContours
+            key={`contours-${markerId}`}
+            data={detail.detail.intensityContours}
+          />
+        )}
+
+        {/*
         Un único popup posicionado, en lugar de uno por marker. Además de ser
         mucho más barato, funciona con clustering: un popup anclado a un marker
         no se puede abrir mientras ese marker está escondido dentro de un
         clúster.
       */}
-      {/*
-        Área donde se sintió, según el ShakeMap del sismo seleccionado. Va antes
-        del popup para quedar por debajo en el orden de pintado.
-      */}
-      {detail.detail?.intensityContours && (
-        <IntensityContours
-          key={markerId}
-          data={detail.detail.intensityContours}
-        />
-      )}
-
-      {selected && (
-        <Popup
-          ref={popupRef}
-          position={[getLatLng(selected).lat, getLatLng(selected).lng]}
-          eventHandlers={{ popupclose: closePopup }}
-          maxWidth={320}
-          /*
-            Leaflet solo conoce el tamaño de su contenedor, no los paneles que
-            se superponen. Sin este margen el popup se abre debajo del cajón de
-            resultados y por encima del borde superior de la ventana.
-          */
-          autoPanPaddingTopLeft={[showResults ? 300 : 20, 76]}
-          autoPanPaddingBottomRight={[20, 20]}
-        >
-          <Card {...selected} $detailed detail={detail} />
-        </Popup>
-      )}
-    </MapContainer>
+        {selected && (
+          <Popup
+            ref={popupRef}
+            position={[getLatLng(selected).lat, getLatLng(selected).lng]}
+            eventHandlers={{ popupclose: closePopup }}
+            maxWidth={320}
+            /*
+              El auto-encuadre de Leaflet se desactiva a propósito: solo corre
+              al abrir el popup, no sabe nada del cajón de resultados que lo
+              tapa, y competía con el `panInside` de `MapController`, que sí
+              contempla ambas cosas y se re-ejecuta cuando llega el detalle.
+            */
+            autoPan={false}
+          >
+            <Card {...selected} $detailed detail={detail} />
+          </Popup>
+        )}
+      </MapContainer>
+    </Wrapper>
   )
 }
 

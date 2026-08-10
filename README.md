@@ -93,8 +93,16 @@ petición por evento**. Solo se pide al abrir un sismo, y se cachea.
 - **Área donde se sintió**: `shakemap → download/cont_mmi.json`, líneas de
   isointensidad Mercalli en GeoJSON. Se dibujan en el mapa con la paleta oficial
   de ShakeMap.
-- **Reportes ciudadanos**: producto `dyfi` («Did You Feel It?»), con
-  `num-responses` y `maxmmi`.
+- **Reportes ciudadanos**: producto `dyfi` («Did You Feel It?»). Además de
+  `num-responses` y `maxmmi`, `dyfi_geo_10km.geojson` trae una celda por zona
+  con `cdi` y `nresp`. Se dibujan como **círculos de tamaño fijo en píxeles y
+  no como los polígonos originales**: los reportes de un sismo grande llegan
+  desde miles de kilómetros, y al zoom necesario para abarcarlos una celda de
+  10 km mide menos de un píxel. La versión de 1 km existe pero pesa 159 KB
+  frente a 65 KB y a escala de mapa no aporta nada.
+- El campo `name` de esas celdas **contiene HTML** (`"UTM:(…)<br>Eloy Alfaro"`).
+  Se extrae la parte legible y se inserta con `textContent`: `bindTooltip` de
+  Leaflet asigna `innerHTML` cuando recibe un string.
 - Los archivos de producto viven en otro path de USGS pero tienen
   `access-control-allow-origin: *`, así que se piden directamente del navegador.
 - Cobertura muy desigual: `shakemap` y `moment-tensor` están en el 100% de los

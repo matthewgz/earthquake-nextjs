@@ -26,9 +26,26 @@ const contours = {
   ],
 }
 
+const REPORTS_URL =
+  'https://earthquake.usgs.gov/product/dyfi/x/dyfi_geo_10km.geojson'
+
+const reports = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      properties: { cdi: 7.4, nresp: 3, name: 'UTM:(17M)<br>Eloy Alfaro' },
+      geometry: { type: 'Polygon', coordinates: [[[0, 0]]] },
+    },
+  ],
+}
+
 const withProducts = (products) => {
-  globalThis.fetch = async (url) =>
-    String(url).includes('cont_mmi') ? json(contours) : detailResponse(products)
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('cont_mmi')) return json(contours)
+    if (String(url).includes('dyfi_geo')) return json(reports)
+
+    return detailResponse(products)
+  }
 }
 
 describe('fetchEarthquakeDetail', () => {
@@ -50,7 +67,12 @@ describe('fetchEarthquakeDetail', () => {
           },
         },
       ],
-      dyfi: [{ properties: { 'num-responses': '287', maxmmi: '7.4' } }],
+      dyfi: [
+        {
+          properties: { 'num-responses': '287', maxmmi: '7.4' },
+          contents: { 'dyfi_geo_10km.geojson': { url: REPORTS_URL } },
+        },
+      ],
       shakemap: [
         { contents: { 'download/cont_mmi.json': { url: CONTOUR_URL } } },
       ],
@@ -62,6 +84,36 @@ describe('fetchEarthquakeDetail', () => {
     assert.equal(detail.responses, 287)
     assert.equal(detail.maxReportedIntensity, 7.4)
     assert.equal(detail.intensityContours.features.length, 1)
+    assert.equal(detail.feltReports.features.length, 1)
+  })
+
+  test('las dos capas son independientes entre sí', async () => {
+    // Un sismo puede tener ShakeMap sin que nadie haya reportado, y al revés.
+    withProducts({
+      shakemap: [
+        { contents: { 'download/cont_mmi.json': { url: CONTOUR_URL } } },
+      ],
+    })
+
+    const soloModelo = await fetchEarthquakeDetail('us-a')
+
+    assert.ok(soloModelo.intensityContours)
+    assert.equal(soloModelo.feltReports, null)
+
+    clearDetailCache()
+    withProducts({
+      dyfi: [
+        {
+          properties: { 'num-responses': '4' },
+          contents: { 'dyfi_geo_10km.geojson': { url: REPORTS_URL } },
+        },
+      ],
+    })
+
+    const soloReportes = await fetchEarthquakeDetail('us-b')
+
+    assert.equal(soloReportes.intensityContours, null)
+    assert.ok(soloReportes.feltReports)
   })
 
   test('devuelve nulos cuando el evento no tiene productos derivados', async () => {

@@ -91,16 +91,27 @@ const fetchEarthquakeDetail = async (id, { signal } = {}) => {
   // Contornos de intensidad de ShakeMap: el «hasta dónde se sintió», modelado.
   const contourUrl = getContentUrl(shakemap, 'download/cont_mmi.json')
 
+  // Celdas de 10 km con los reportes de personas. La versión de 1 km existe
+  // pero pesa 159 KB frente a 65 KB, y a escala de mapa no aporta nada.
+  const reportsUrl = getContentUrl(dyfi, 'dyfi_geo_10km.geojson')
+
+  // Ambos son opcionales e independientes: se piden en paralelo y un fallo en
+  // uno no debe arrastrar al otro ni al resto del detalle.
+  const [intensityContours, feltReports] = await Promise.all([
+    contourUrl ? readJson(contourUrl, signal).catch(() => null) : null,
+    reportsUrl ? readJson(reportsUrl, signal).catch(() => null) : null,
+  ])
+
   const result = {
     id,
     ruptureDuration: getRuptureDuration(products),
     /** Nº de reportes ciudadanos, y la intensidad máxima que reportaron. */
     responses: Number(dyfi?.properties?.['num-responses']) || null,
     maxReportedIntensity: Number(dyfi?.properties?.maxmmi) || null,
-    /** GeoJSON de líneas de isointensidad, o `null` si el evento no tiene ShakeMap. */
-    intensityContours: contourUrl
-      ? await readJson(contourUrl, signal).catch(() => null)
-      : null,
+    /** Líneas de isointensidad, o `null` si el evento no tiene ShakeMap. */
+    intensityContours,
+    /** Polígonos por celda con `cdi` y `nresp`, o `null` si nadie reportó. */
+    feltReports,
   }
 
   writeCache(id, result)
