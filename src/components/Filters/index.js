@@ -1,40 +1,28 @@
 import React, { useContext } from 'react'
-import dynamic from 'next/dynamic'
+
+import Desktop from './index.desktop'
+import Mobile from './index.mobile'
 import { Context } from 'context/index'
-import moment from 'moment'
 
-const Desktop = dynamic(() => import('./index.desktop'))
-
-const Mobile = dynamic(() => import('./index.mobile'))
-
+/**
+ * Las dos variantes se importan de forma estática, no con `next/dynamic`.
+ *
+ * El code-splitting aquí ya no compensa: ambas comparten `Controls` y solo se
+ * diferencian en el contenedor que lo envuelve, así que el trozo que se
+ * ahorraba era una plantilla de estilos. A cambio, cada `dynamic()` crea un
+ * límite de streaming, y Next deja colgando de `<body>` un contenedor oculto
+ * con la versión renderizada en el servidor: quedaban en el documento un juego
+ * duplicado de selectores de fecha, magnitud y casilla.
+ *
+ * Además, desde que el diseño se decide con `matchMedia` en tiempo de ejecución
+ * y no solo con el User-Agent, cualquiera de las dos variantes puede hacer
+ * falta tras un cambio de tamaño de ventana, así que cargarlas por separado
+ * tampoco ahorra nada en la práctica.
+ */
 const Filters = () => {
-  const { dates, setDates, isMobile } = useContext(Context)
+  const { isMobile } = useContext(Context)
 
-  const handleToDate = (day, modifiers) => {
-    if (modifiers?.disabled) {
-      return
-    }
-
-    setDates({ ...dates, to: moment(day).format('YYYY-MM-DDT00:00:00') })
-  }
-
-  const handleFromDate = (day, modifiers) => {
-    if (modifiers?.disabled) {
-      return
-    }
-
-    setDates({ ...dates, from: moment(day).format('YYYY-MM-DDT23:59:59') })
-  }
-
-  return (
-    <>
-      {isMobile ? (
-        <Mobile handleToDate={handleToDate} handleFromDate={handleFromDate} />
-      ) : (
-        <Desktop handleToDate={handleToDate} handleFromDate={handleFromDate} />
-      )}
-    </>
-  )
+  return isMobile ? <Mobile /> : <Desktop />
 }
 
 export default Filters

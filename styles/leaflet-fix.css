@@ -1,22 +1,13 @@
-/* Estilos para asegurar que el contenedor de Leaflet tenga altura completa */
+/* El contenedor ocupa todo el alto disponible del <main>. */
 .leaflet-container {
   height: 100%;
   width: 100%;
 }
 
-/* Solución para que los iconos se muestren correctamente */
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-  display: block !important;
-}
-
-/* Estilos adicionales para los popups */
-.leaflet-popup-content {
-  margin: 13px;
-  min-width: 200px;
-  background-color: transparent;
-}
-
+/*
+  El popup dibuja su propio marco; aquí se vacía para que se vea únicamente la
+  tarjeta que va dentro.
+*/
 .leaflet-popup-content {
   padding: 0;
   margin: 0 !important;

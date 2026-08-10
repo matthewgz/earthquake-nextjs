@@ -1,54 +1,28 @@
-import React, { useContext } from 'react'
-import Select from 'components/Select'
-import DatePicker from 'components/DatePicker'
-import { Context } from 'context/index'
+import React from 'react'
+
+import Controls from './Controls'
 
 import styled from 'styled-components'
 
 const Container = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
 
-  & > * {
+  /*
+    Los tres primeros controles (magnitud y las dos fechas) van a ancho fijo;
+    el último es la casilla, que se ajusta a su contenido.
+  */
+  & > *:not(:last-child) {
     width: 250px;
-    padding: 0;
-    margin: 0;
-    margin-left: 16px;
   }
 `
 
-const FiltersDesktop = (props) => {
-  const { handleToDate, handleFromDate } = props
-
-  const { dates } = useContext(Context)
-
-  return (
-    <Container>
-      <Select />
-      <DatePicker
-        title="Desde"
-        onDayClick={handleToDate}
-        selectedDays={new Date(dates.to)}
-        disabledDays={[
-          {
-            after: new Date(),
-          },
-        ]}
-      />
-      <DatePicker
-        title="Hasta"
-        onDayClick={handleFromDate}
-        selectedDays={new Date(dates.from)}
-        disabledDays={[
-          {
-            before: new Date(dates.to),
-            after: new Date(),
-          },
-        ]}
-      />
-    </Container>
-  )
-}
+const FiltersDesktop = () => (
+  <Container>
+    <Controls />
+  </Container>
+)
 
 export default FiltersDesktop

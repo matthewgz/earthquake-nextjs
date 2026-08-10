@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useContext, useRef } from 'react'
-import Select from 'components/Select'
-import DatePicker from 'components/DatePicker'
+import React, { useContext, useEffect, useRef, useState } from 'react'
+
+import Controls from './Controls'
 import { move } from 'styles/keyframes'
 import { Context } from 'context/index'
 
@@ -17,6 +17,11 @@ const Container = styled.div`
   padding: 24px 16px;
   z-index: 900;
   position: absolute;
+
+  /* Espaciado uniforme entre controles apilados. */
+  & > * + * {
+    margin-top: 16px;
+  }
 
   animation: ${(props) => move(props)} ease-out 1s;
   ${(props) => props.$fin?.right && `right: ${props.$fin?.right}`};
@@ -51,10 +56,8 @@ const hide = {
   },
 }
 
-const FiltersMobile = (props) => {
-  const { handleToDate, handleFromDate } = props
-
-  const { showFilters, dates } = useContext(Context)
+const FiltersMobile = () => {
+  const { showFilters } = useContext(Context)
 
   const firstUpdate = useRef(true)
 
@@ -73,29 +76,11 @@ const FiltersMobile = (props) => {
   }, [showFilters])
 
   return (
-    <Container $fin={animation.fin}>
-      <Select />
-      <DatePicker
-        title="Desde"
-        onDayClick={handleToDate}
-        selectedDays={new Date(dates.to)}
-        disabledDays={[
-          {
-            after: new Date(),
-          },
-        ]}
-      />
-      <DatePicker
-        title="Hasta"
-        onDayClick={handleFromDate}
-        selectedDays={new Date(dates.from)}
-        disabledDays={[
-          {
-            before: new Date(dates.to),
-            after: new Date(),
-          },
-        ]}
-      />
+    // El panel permanece en el DOM aunque esté fuera de pantalla; `inert` evita
+    // que el foco del teclado y los lectores de pantalla lleguen a controles
+    // que el usuario no puede ver.
+    <Container $fin={animation.fin} inert={!showFilters}>
+      <Controls />
     </Container>
   )
 }

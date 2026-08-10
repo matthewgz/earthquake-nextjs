@@ -1,18 +1,17 @@
 'use client'
 
-import { useReducer, useContext, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import isEqual from 'lodash.isequal'
 import styled from 'styled-components'
 
-import Helmet from '../Helmet'
 import Header from '../Header'
+import Loader from '../Loader'
 import Results from '../Results'
-import { Context } from '../../context/index'
-import { PER_PAGE, TYPES } from '../../utils/constants'
-import getUrlAPI from '../../utils/getUrlAPI'
+import useEarthquakes from '../../hooks/useEarthquakes'
 
-const EarthquakeMap = dynamic(() => import('../EarthquakeMap'), { ssr: false })
+const EarthquakeMap = dynamic(() => import('../EarthquakeMap'), {
+  ssr: false,
+  loading: () => <Loader fullHeight />,
+})
 
 const Container = styled.div`
   position: relative;
@@ -27,117 +26,39 @@ const Container = styled.div`
   }
 `
 
-const getInitialState = (data) => ({
-  allData: data,
-  loading: false,
-  more: data.length >= PER_PAGE,
-  data: data.slice(0, PER_PAGE),
-  total: data.length,
-  after: 10,
-  error: undefined,
-})
-
-const reducer = (state, action) => {
-  switch (action.type) {
-    case TYPES.start:
-      return { ...state, loading: true }
-
-    case TYPES.loaded:
-      return {
-        ...state,
-        loading: false,
-        data: [...state.data, ...action.newData],
-        more: action.newData.length === PER_PAGE,
-        after: state.after + action.newData.length,
-        total: action.allData.length,
-        allData: action.allData,
-      }
-
-    case TYPES.more:
-      return {
-        ...state,
-        more: true,
-        allData: action.allData,
-        total: action.allData.length,
-      }
-
-    case TYPES.reset:
-      return getInitialState(action.allData)
-
-    default:
-      throw new Error("Don't understand action")
-  }
-}
-
-// Función para cargar datos en el cliente
-async function getServerData(dates, minMagnitude) {
-  const URL = getUrlAPI(dates, minMagnitude)
-  const res = await fetch(URL)
-  const data = await res.json()
-  return data?.features || []
-}
-
-export default function ClientHome({ initialData }) {
-  const firstUpdate = useRef(true)
-  const { minMagnitude, dates } = useContext(Context)
-  const [state, dispatch] = useReducer(reducer, getInitialState(initialData))
-
-  const load = () => {
-    dispatch({ type: TYPES.start })
-
-    setTimeout(() => {
-      const newData = state.allData.slice(state.after, state.after + PER_PAGE)
-      dispatch({ type: TYPES.loaded, newData, allData: state.allData })
-    }, 300)
-  }
-
-  useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false
-      return
-    }
-
-    async function fetchFilteredData() {
-      dispatch({ type: TYPES.start })
-      const data = await getServerData(dates, minMagnitude)
-      dispatch({ type: TYPES.more, allData: data })
-    }
-
-    fetchFilteredData()
-  }, [minMagnitude, dates])
-
-  useEffect(() => {
-    if (isEqual(state.allData, initialData)) {
-      return
-    }
-
-    dispatch({ type: TYPES.reset, allData: state.allData })
-  }, [state.allData, initialData])
-
-  if (!state || state.length === 0) {
-    return (
-      <Container>
-        <Header />
-        <main
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          Cargando...
-        </main>
-      </Container>
-    )
-  }
+export default function ClientHome({
+  initialData,
+  initialQuery,
+  initialTotal,
+}) {
+  const {
+    features,
+    visible,
+    total,
+    truncated,
+    status,
+    error,
+    hasMore,
+    loadMore,
+    retry,
+  } = useEarthquakes({ initialData, initialQuery, initialTotal })
 
   return (
     <Container>
-      <Helmet title="Earthquake" />
       <Header />
       <main>
-        <Results {...state} load={load} />
-        <EarthquakeMap isMarkerShown data={state.allData} />
+        <Results
+          data={visible}
+          features={features}
+          total={total}
+          truncated={truncated}
+          status={status}
+          error={error}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          retry={retry}
+        />
+        <EarthquakeMap data={features} />
       </main>
     </Container>
   )

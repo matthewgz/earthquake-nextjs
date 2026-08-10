@@ -20,12 +20,19 @@ const Container = styled.div`
   justify-content: center;
   margin-top: 24px;
 
-  ${(props) => props.fullHeight && `height: 100%`};
+  ${(props) => props.$fullHeight && `height: 100%`};
 `
 
-const Loader = (props) => {
+const Loader = ({ fullHeight, ...rest }) => {
   return (
-    <Container {...props}>
+    // Prop transitoria: sin el prefijo `$`, styled-components v6 la reenvía al
+    // DOM y React avisa de un atributo desconocido.
+    <Container
+      $fullHeight={fullHeight}
+      role="status"
+      aria-label="Cargando"
+      {...rest}
+    >
       <Div />
     </Container>
   )
