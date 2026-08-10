@@ -48,6 +48,17 @@ const NativeDateInput = styled.input`
   height: 100%;
   opacity: 0;
   cursor: pointer;
+
+  /*
+    El indicador nativo del calendario se retira para que exista un único
+    camino de apertura: el manejador del contenedor. Si se deja, los clics en
+    esa zona abren el calendario por su cuenta y showPicker() se encuentra con
+    uno ya abierto. Es invisible de todas formas, porque el input está a
+    opacidad 0.
+  */
+  &::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 `
 
 /**
@@ -96,14 +107,25 @@ const DatePicker = (props) => {
     setShowFilters(false)
   }
 
-  const handleContainerClick = (event) => {
-    // El click sobre el input ya abre su propio calendario; volver a llamar a
-    // showPicker() ahí lanza NotAllowedError en algunos navegadores.
-    if (event.target === inputRef.current) {
-      return
+  /**
+   * Abre el calendario desde cualquier punto del control, no solo desde el
+   * icono.
+   *
+   * El input invisible cubre todo el recuadro, así que aquí llegan todos los
+   * clics. Antes había una guarda que se saltaba `showPicker()` cuando el clic
+   * caía sobre el input —es decir, siempre—, y lo único que abría el calendario
+   * era el indicador nativo del propio input, que está a la derecha y coincide
+   * visualmente con el icono decorativo.
+   *
+   * `showPicker()` lanza si no hay activación del usuario o si el calendario ya
+   * está abierto; ninguno de los dos casos merece romper nada.
+   */
+  const handleContainerClick = () => {
+    try {
+      inputRef.current?.showPicker?.()
+    } catch {
+      // El navegador ya lo está mostrando, o no permite abrirlo ahora.
     }
-
-    inputRef.current?.showPicker?.()
   }
 
   return (
