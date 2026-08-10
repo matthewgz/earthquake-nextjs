@@ -64,7 +64,23 @@ const useEarthquakeDetail = (id) => {
     }
   }, [id])
 
-  return state
+  /**
+   * Nunca devuelve el detalle de un sismo distinto al pedido.
+   *
+   * El id cambia en cuanto se pulsa otro sismo, pero el estado del reducer se
+   * actualiza después, en un efecto. Sin esta comprobación existe un render
+   * intermedio en el que se pinta el sismo nuevo con el detalle del anterior, y
+   * eso bastaba para dejar el mapa con las capas equivocadas: `GeoJSON` de
+   * react-leaflet crea su capa al montarse y **no la rehace cuando cambia
+   * `data`**, así que la capa nacía con los datos viejos y se quedaba así.
+   *
+   * Solo se notaba con la caché caliente —es decir, al volver a un sismo ya
+   * visto—: con la caché fría el estado pasa por `detail: null` entre medias,
+   * la capa se desmonta y al remontarse toma los datos correctos por casualidad.
+   */
+  const detail = state.detail?.id === id ? state.detail : null
+
+  return { ...state, detail }
 }
 
 export default useEarthquakeDetail

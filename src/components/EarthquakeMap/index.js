@@ -332,15 +332,21 @@ const EarthquakeMap = (props) => {
         en el orden de pintado. El relleno de reportes va primero para que los
         contornos del modelo se lean encima.
       */}
+        {/*
+          Las claves cuelgan del id del detalle que se está pintando, no de la
+          selección: `GeoJSON` de react-leaflet crea su capa al montarse y no la
+          rehace si cambian los datos, así que la única forma de renovarla es
+          que cambie la clave justo cuando cambian los datos.
+        */}
         {showReports && detail.detail?.feltReports && (
           <FeltReports
-            key={`reports-${markerId}`}
+            key={`reports-${detail.detail.id}`}
             data={detail.detail.feltReports}
           />
         )}
         {showContours && detail.detail?.intensityContours && (
           <IntensityContours
-            key={`contours-${markerId}`}
+            key={`contours-${detail.detail.id}`}
             data={detail.detail.intensityContours}
           />
         )}

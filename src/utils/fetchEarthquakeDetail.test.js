@@ -181,6 +181,29 @@ describe('fetchEarthquakeDetail', () => {
     assert.equal(calls, 2)
   })
 
+  test('cada detalle lleva el id al que pertenece', async () => {
+    // De esto depende que la UI pueda descartar el detalle del sismo anterior:
+    // el id de la selección cambia antes que el estado del detalle, y sin poder
+    // compararlos se pintaban en el mapa las capas del sismo equivocado.
+    withProducts({
+      dyfi: [
+        {
+          properties: { 'num-responses': '2' },
+          contents: { 'dyfi_geo_10km.geojson': { url: REPORTS_URL } },
+        },
+      ],
+    })
+
+    const primero = await fetchEarthquakeDetail('us-5.0')
+    const segundo = await fetchEarthquakeDetail('us-7.4')
+
+    assert.equal(primero.id, 'us-5.0')
+    assert.equal(segundo.id, 'us-7.4')
+
+    // Y al volver a uno ya cacheado sigue viniendo con su propio id.
+    assert.equal((await fetchEarthquakeDetail('us-5.0')).id, 'us-5.0')
+  })
+
   test('propaga el error si falla la ficha principal', async () => {
     globalThis.fetch = async () => ({
       ok: false,
