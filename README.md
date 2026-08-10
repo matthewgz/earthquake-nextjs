@@ -76,6 +76,30 @@ Comprobado contra el servicio en vivo:
   hay que comprobar el `content-type` antes de parsear.
 - Un rango invertido devuelve **200 con `features: []`**, indistinguible de «no
   hubo sismos». Se valida antes de pedir.
+- El feed mezcla sismos naturales con **voladuras de cantera, explosiones,
+  deslizamientos y sismos de hielo** (~2% del total, siempre de magnitud baja).
+  Se filtran con `eventtype=earthquake`, activado por defecto.
+
+### Datos que solo están en el endpoint de detalle
+
+`/query?eventid=<id>` devuelve los productos derivados, a costa de **una
+petición por evento**. Solo se pide al abrir un sismo, y se cachea.
+
+- **Duración**: `moment-tensor.sourcetime-duration`. Ojo, es la duración de la
+  función de fuente, un valor **modelado** a partir del momento sísmico
+  (`sourcetime-type: triangle`) y no una medición: todos los M6.3–6.4 dan 7 s.
+  Es el tiempo de ruptura de la falla, **no** cuánto se percibió el temblor,
+  que es bastante más. La UI lo etiqueta como tal a propósito.
+- **Área donde se sintió**: `shakemap → download/cont_mmi.json`, líneas de
+  isointensidad Mercalli en GeoJSON. Se dibujan en el mapa con la paleta oficial
+  de ShakeMap.
+- **Reportes ciudadanos**: producto `dyfi` («Did You Feel It?»), con
+  `num-responses` y `maxmmi`.
+- Los archivos de producto viven en otro path de USGS pero tienen
+  `access-control-allow-origin: *`, así que se piden directamente del navegador.
+- Cobertura muy desigual: `shakemap` y `moment-tensor` están en el 100% de los
+  sismos M≥5, pero en el 0–20% por debajo de M4. La UI degrada mostrando solo
+  lo que hay.
 
 ## Estructura
 

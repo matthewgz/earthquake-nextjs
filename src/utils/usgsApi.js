@@ -90,6 +90,17 @@ export const buildQuery = ({ minMagnitude, start, end, onlyEarthquakes }) => {
 export const getQueryUrl = (query) => `${getServiceUrl()}/query?${query}`
 
 /**
+ * Ficha completa de un evento, con sus productos derivados (ShakeMap, DYFI,
+ * tensor de momento). Es una petición por evento, así que solo se usa bajo
+ * demanda.
+ */
+export const getDetailUrl = (eventId) =>
+  `${getServiceUrl()}/query?${new URLSearchParams({
+    eventid: eventId,
+    format: 'geojson',
+  }).toString()}`
+
+/**
  * `/count` devuelve el total real. Hace falta porque `metadata.count`
  * desaparece de la respuesta de `/query` en cuanto se envía `limit`
  * (verificado), y sin él no podríamos distinguir "1000 resultados" de

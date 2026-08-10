@@ -3,6 +3,7 @@ import React, { forwardRef, useContext } from 'react'
 import styled from 'styled-components'
 import { Context } from 'context/index'
 import {
+  formatCount,
   formatDepth,
   formatEventDate,
   formatEventTime,
@@ -100,6 +101,20 @@ const Container = styled.div`
 
   ${(props) => props.$clickable && `cursor: pointer`};
   ${(props) => props.$selected && `border: 2px white solid`};
+
+  /*
+    En el popup del mapa la tarjeta lleva el bloque de detalle y puede pasar de
+    380 px. Acotarla evita que el popup se salga del mapa cuando el sismo está
+    cerca del borde superior, sin depender de que el auto-encuadre de Leaflet
+    acierte con un contenido que además crece de forma asíncrona.
+  */
+  ${(props) =>
+    props.$detailed &&
+    `
+    max-height: min(320px, 60dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  `};
 `
 
 const Badges = styled.div`
@@ -125,6 +140,27 @@ const Badge = styled.span`
   padding: 4px 6px;
 `
 
+const Detail = styled.div`
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  margin-top: 12px;
+  padding-top: 10px;
+
+  & p {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  & p + p {
+    margin-top: 6px;
+  }
+`
+
+const Caveat = styled.span`
+  display: block;
+  font-size: 10px;
+  opacity: 0.75;
+`
+
 const UsgsLink = styled.a`
   display: inline-block;
   font-size: 12px;
@@ -148,6 +184,7 @@ const Card = forwardRef((props, ref) => {
     $clickable,
     $inList,
     $detailed,
+    detail,
     ...restProps
   } = props
   const { marker } = useContext(Context)
@@ -168,6 +205,7 @@ const Card = forwardRef((props, ref) => {
       ref={ref}
       $clickable={$clickable}
       $selected={$inList && marker?.id === id}
+      $detailed={$detailed}
       {...restProps}
     >
       <Title>
@@ -241,6 +279,46 @@ const Card = forwardRef((props, ref) => {
           </Badge>
         )}
       </Badges>
+
+      {/*
+        Datos que exigen una petición extra, así que solo se piden y se muestran
+        cuando el usuario abre un sismo concreto.
+      */}
+      {$detailed && detail?.status === 'success' && detail.detail && (
+        <Detail>
+          {detail.detail.ruptureDuration && (
+            <p>
+              Ruptura de ~{detail.detail.ruptureDuration} s
+              {/*
+                Es la duración de la función de fuente del tensor de momento: un
+                valor MODELADO a partir del momento sísmico, no una medición.
+                Presentarlo como «duró X segundos» sería engañoso, porque el
+                movimiento percibido dura bastante más que la ruptura.
+              */}
+              <Caveat>
+                Estimación del tiempo de ruptura de la falla, no de cuánto se
+                sintió el movimiento.
+              </Caveat>
+            </p>
+          )}
+          {detail.detail.responses > 0 && (
+            <p>
+              {formatCount(detail.detail.responses)} reportes ciudadanos
+              {detail.detail.maxReportedIntensity && (
+                <Caveat>
+                  Intensidad máxima reportada:{' '}
+                  {getIntensityLabel(detail.detail.maxReportedIntensity)}
+                </Caveat>
+              )}
+            </p>
+          )}
+          {detail.detail.intensityContours && (
+            <p>
+              <Caveat>El área donde se sintió está dibujada en el mapa.</Caveat>
+            </p>
+          )}
+        </Detail>
+      )}
 
       {/*
         Solo en el popup del mapa: en la lista, un enlace por tarjeta añadiría
