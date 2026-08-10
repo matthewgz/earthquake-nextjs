@@ -10,9 +10,35 @@ import {
 describe('parseFilterParams', () => {
   test('lee unos filtros bien formados', () => {
     assert.deepEqual(
-      parseFilterParams('?mag=5&desde=2026-08-01&hasta=2026-08-10'),
-      { minMagnitude: 5, start: '2026-08-01', end: '2026-08-10' },
+      parseFilterParams(
+        '?mag=5&desde=2026-08-01&hasta=2026-08-10&solosismos=1',
+      ),
+      {
+        minMagnitude: 5,
+        start: '2026-08-01',
+        end: '2026-08-10',
+        onlyEarthquakes: true,
+      },
     )
+  })
+
+  test('solosismos solo acepta 1 y 0 explícitos', () => {
+    assert.equal(parseFilterParams('?solosismos=1').onlyEarthquakes, true)
+    assert.equal(parseFilterParams('?solosismos=0').onlyEarthquakes, false)
+
+    // Cualquier otra cosa se trata como ausente para que mande el valor por
+    // defecto de la app, en vez de colarse como `false`.
+    for (const search of [
+      '?solosismos=true',
+      '?solosismos=',
+      '?solosismos=si',
+    ]) {
+      assert.equal(
+        parseFilterParams(search).onlyEarthquakes,
+        null,
+        `debería ignorar ${search}`,
+      )
+    }
   })
 
   test('acepta magnitud 0', () => {
@@ -63,6 +89,7 @@ describe('parseFilterParams', () => {
         minMagnitude: 7,
         start: null,
         end: '2026-08-10',
+        onlyEarthquakes: null,
       },
     )
   })
@@ -80,9 +107,26 @@ describe('buildFilterSearch', () => {
       minMagnitude: 5,
       start: '2026-08-01',
       end: '2026-08-10',
+      onlyEarthquakes: true,
     })
 
-    assert.equal(search, '?mag=5&desde=2026-08-01&hasta=2026-08-10')
+    assert.equal(
+      search,
+      '?mag=5&desde=2026-08-01&hasta=2026-08-10&solosismos=1',
+    )
+  })
+
+  test('serializa solosismos=0 de forma explícita', () => {
+    // Explícito y no omitido: si se omitiera, al recargar volvería a mandar el
+    // valor por defecto (true) y el filtro del usuario se perdería.
+    const search = buildFilterSearch({
+      minMagnitude: 5,
+      start: '2026-08-01',
+      end: '2026-08-10',
+      onlyEarthquakes: false,
+    })
+
+    assert.match(search, /solosismos=0/)
   })
 
   test('serializa la magnitud 0', () => {
@@ -100,6 +144,7 @@ describe('buildFilterSearch', () => {
       minMagnitude: 3,
       start: '2026-01-31',
       end: '2026-02-01',
+      onlyEarthquakes: false,
     }
 
     assert.deepEqual(parseFilterParams(buildFilterSearch(filtros)), filtros)

@@ -48,7 +48,7 @@ const getServiceUrl = () => {
  * El string resultante también sirve como clave de caché y de deduplicación,
  * porque el orden de los parámetros es fijo.
  */
-export const buildQuery = ({ minMagnitude, start, end }) => {
+export const buildQuery = ({ minMagnitude, start, end, onlyEarthquakes }) => {
   const starttime = startOfLocalDayUTC(start)
   const endtime = endOfLocalDayUTC(end)
 
@@ -68,14 +68,23 @@ export const buildQuery = ({ minMagnitude, start, end }) => {
 
   // `limit` no es opcional: sin él, un rango amplio con magnitud baja supera el
   // tope de 20.000 resultados de USGS y la API responde 400 (verificado).
-  return new URLSearchParams({
+  const params = new URLSearchParams({
     format: 'geojson',
     starttime,
     endtime,
     minmagnitude: String(magnitude),
     limit: String(MAX_RESULTS),
     orderby: 'time',
-  }).toString()
+  })
+
+  // USGS publica en el mismo feed voladuras de cantera, explosiones,
+  // deslizamientos y sismos de hielo. Son ~2% del total y solo aparecen con
+  // magnitudes bajas, pero sin filtrar se presentan como si fueran terremotos.
+  if (onlyEarthquakes) {
+    params.set('eventtype', 'earthquake')
+  }
+
+  return params.toString()
 }
 
 export const getQueryUrl = (query) => `${getServiceUrl()}/query?${query}`

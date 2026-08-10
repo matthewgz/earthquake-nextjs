@@ -134,6 +134,16 @@ export const Provider = ({ children, isMobile: mobile }) => {
     selectedMagnitude ?? urlFilters.minMagnitude ?? MIN_MAGNITUDE
 
   /**
+   * Por defecto se excluyen voladuras de cantera, explosiones y demás eventos
+   * no sísmicos: la app se llama Earthquake y los presentaba como terremotos.
+   * Son ~2% del total y solo aparecen con magnitudes bajas.
+   */
+  const [selectedOnlyEarthquakes, setOnlyEarthquakes] = useState(null)
+
+  const onlyEarthquakes =
+    selectedOnlyEarthquakes ?? urlFilters.onlyEarthquakes ?? true
+
+  /**
    * Guarda únicamente lo que el usuario eligió explícitamente. Mientras no haya
    * elegido nada, el rango efectivo cae a `today`, que es `null` en el servidor
    * y el día local en el navegador.
@@ -200,7 +210,11 @@ export const Provider = ({ children, isMobile: mobile }) => {
       return
     }
 
-    const search = buildFilterSearch({ minMagnitude, ...range })
+    const search = buildFilterSearch({
+      minMagnitude,
+      onlyEarthquakes,
+      ...range,
+    })
 
     if (search !== window.location.search) {
       window.history.replaceState(
@@ -209,7 +223,7 @@ export const Provider = ({ children, isMobile: mobile }) => {
         `${window.location.pathname}${search}`,
       )
     }
-  }, [minMagnitude, range])
+  }, [minMagnitude, onlyEarthquakes, range])
 
   /**
    * Sin memoizar, `value` era un objeto nuevo en cada render y hacía que TODOS
@@ -221,6 +235,7 @@ export const Provider = ({ children, isMobile: mobile }) => {
       showFilters,
       showResults,
       minMagnitude,
+      onlyEarthquakes,
       range,
       today,
       isMobile,
@@ -228,6 +243,7 @@ export const Provider = ({ children, isMobile: mobile }) => {
       setShowFilters,
       setShowResults,
       setMinMagnitude,
+      setOnlyEarthquakes,
       setRangeStart,
       setRangeEnd,
       setMarker,
@@ -236,6 +252,7 @@ export const Provider = ({ children, isMobile: mobile }) => {
       showFilters,
       showResults,
       minMagnitude,
+      onlyEarthquakes,
       range,
       today,
       isMobile,

@@ -33,8 +33,12 @@ export default async function Home() {
   // petición correctiva.
   const today = todayISO()
 
+  // Tiene que coincidir con los valores por defecto del contexto; si no, el
+  // cliente detectaría una consulta distinta y haría una petición correctiva
+  // innecesaria en cada carga.
   const initialQuery = buildQuery({
     minMagnitude: MIN_MAGNITUDE,
+    onlyEarthquakes: true,
     start: today,
     end: today,
   })

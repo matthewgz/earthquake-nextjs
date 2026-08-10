@@ -48,6 +48,20 @@ export const toDateTimeAttribute = (time) => new Date(time).toISOString()
  * claro en qué zona están las horas de los sismos. USGS entrega los tiempos en
  * UTC y aquí se muestran en hora local.
  */
+const numberFormatter = new Intl.NumberFormat(LOCALE)
+
+/** Profundidad en kilómetros, sin decimales innecesarios. */
+export const formatDepth = (depthKm) =>
+  `${numberFormatter.format(Math.round(depthKm))} km`
+
+/** «287 personas lo sintieron» / «1 persona lo sintió». */
+export const formatFelt = (count) =>
+  count === 1
+    ? '1 persona lo sintió'
+    : `${numberFormatter.format(count)} personas lo sintieron`
+
+export const formatCount = (value) => numberFormatter.format(value)
+
 export const getTimeZoneLabel = () =>
   timeZoneFormatter
     .formatToParts(Date.now())

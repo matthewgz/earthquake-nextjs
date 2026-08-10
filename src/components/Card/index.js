@@ -3,10 +3,19 @@ import React, { forwardRef, useContext } from 'react'
 import styled from 'styled-components'
 import { Context } from 'context/index'
 import {
+  formatDepth,
   formatEventDate,
   formatEventTime,
+  formatFelt,
   toDateTimeAttribute,
 } from 'utils/formatters'
+import {
+  getAlertInfo,
+  getDepth,
+  getDepthLabel,
+  getEventTypeLabel,
+  getIntensityLabel,
+} from 'utils/earthquakeInfo'
 
 const Tooltip = styled.div`
   margin: 0;
@@ -93,16 +102,66 @@ const Container = styled.div`
   ${(props) => props.$selected && `border: 2px white solid`};
 `
 
+const Badges = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+
+  &:empty {
+    display: none;
+  }
+`
+
+const Badge = styled.span`
+  align-items: center;
+  background: ${(props) => props.$color ?? 'rgba(255, 255, 255, 0.18)'};
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 4px;
+  line-height: 1;
+  padding: 4px 6px;
+`
+
+const UsgsLink = styled.a`
+  display: inline-block;
+  font-size: 12px;
+  margin-top: 10px;
+  text-decoration: underline;
+
+  &:focus-visible {
+    outline: 2px solid #e5edef;
+    outline-offset: 2px;
+  }
+`
+
 const Card = forwardRef((props, ref) => {
   // `$clickable` y `$selected` son props transitorias: sin el prefijo `$`,
   // styled-components v6 las reenvía al DOM y React avisa de atributos
   // desconocidos.
-  const { properties, geometry, id, $clickable, $inList, ...restProps } = props
+  const {
+    properties,
+    geometry,
+    id,
+    $clickable,
+    $inList,
+    $detailed,
+    ...restProps
+  } = props
   const { marker } = useContext(Context)
 
   const magnitude = Number.isFinite(properties?.mag)
     ? properties.mag.toFixed(1)
     : '—'
+
+  const depth = getDepth({ geometry })
+  const depthLabel = getDepthLabel(depth)
+  const typeLabel = getEventTypeLabel(properties.type)
+  const alertInfo = getAlertInfo(properties.alert)
+  const intensity = properties.cdi ?? properties.mmi
+  const intensityLabel = getIntensityLabel(intensity)
 
   return (
     <Container
@@ -141,6 +200,63 @@ const Card = forwardRef((props, ref) => {
           {formatEventTime(properties.time)}
         </time>
       </Text>
+      {depth !== null && (
+        <Text>
+          <span>Prof.: </span>
+          {formatDepth(depth)}
+          {depthLabel && ` (${depthLabel})`}
+        </Text>
+      )}
+
+      {/*
+        Las insignias solo aparecen cuando hay algo que decir. Por debajo de
+        magnitud 5, la mayoría de estos campos vienen vacíos desde USGS, así que
+        una tarjeta sin ellas es el caso normal, no un fallo.
+      */}
+      <Badges>
+        {typeLabel && (
+          <Badge
+            $color="rgba(0, 0, 0, 0.35)"
+            title="Este evento no es un sismo natural"
+          >
+            {typeLabel}
+          </Badge>
+        )}
+        {properties.tsunami === 1 && (
+          <Badge $color="#0b5394">Aviso de tsunami</Badge>
+        )}
+        {alertInfo && (
+          <Badge $color={alertInfo.color} title="Alerta PAGER de USGS">
+            {alertInfo.label}
+          </Badge>
+        )}
+        {intensityLabel && (
+          <Badge title={`Intensidad Mercalli ${intensity.toFixed(1)}`}>
+            {intensityLabel}
+          </Badge>
+        )}
+        {properties.felt > 0 && (
+          <Badge title="Reportes del programa «Did You Feel It?» de USGS">
+            {formatFelt(properties.felt)}
+          </Badge>
+        )}
+      </Badges>
+
+      {/*
+        Solo en el popup del mapa: en la lista, un enlace por tarjeta añadiría
+        una parada de tabulación por resultado y haría el recorrido con teclado
+        mucho más pesado.
+      */}
+      {$detailed && properties.url && (
+        <UsgsLink
+          href={properties.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => event.stopPropagation()}
+        >
+          Ver ficha completa en USGS ↗
+        </UsgsLink>
+      )}
     </Container>
   )
 })

@@ -27,22 +27,49 @@ export class EarthquakeApiError extends Error {
  * evento (`ids`, `sources`, `types`, `dmin`, `rms`, `gap`…). Sin proyectar,
  * React y Leaflet arrastran esos objetos completos por cada marker.
  */
-const projectFeature = (feature) => ({
-  id: feature.id,
-  properties: {
-    place: feature.properties?.place ?? 'Ubicación desconocida',
-    mag: feature.properties?.mag ?? null,
-    time: feature.properties?.time ?? null,
-    url: feature.properties?.url ?? null,
-  },
-  geometry: {
-    coordinates: [
-      feature.geometry?.coordinates?.[0],
-      feature.geometry?.coordinates?.[1],
-      feature.geometry?.coordinates?.[2] ?? null,
-    ],
-  },
-})
+const projectFeature = (feature) => {
+  const source = feature.properties ?? {}
+
+  return {
+    id: feature.id,
+    properties: {
+      place: source.place ?? 'Ubicación desconocida',
+      mag: source.mag ?? null,
+      time: source.time ?? null,
+      url: source.url ?? null,
+
+      // Todo lo de aquí abajo ya venía en la respuesta y se estaba tirando.
+      // Mostrarlo no cuesta ninguna petición adicional.
+
+      /** Cuántas personas reportaron haberlo sentido (programa «Did You Feel It?»). */
+      felt: source.felt ?? null,
+      /** Intensidad percibida por la gente, 0–10. */
+      cdi: source.cdi ?? null,
+      /** Intensidad medida por instrumentos, 0–10. */
+      mmi: source.mmi ?? null,
+      /** Alerta PAGER de víctimas y daños: green | yellow | orange | red. */
+      alert: source.alert ?? null,
+      /** 1 si hubo aviso de tsunami asociado. */
+      tsunami: source.tsunami ?? 0,
+      /** Significancia 0–1000; combina magnitud, alcance y reportes. */
+      sig: source.sig ?? null,
+      /** Escala usada para la magnitud (mb, mww, ml…). */
+      magType: source.magType ?? null,
+      /** earthquake, quarry blast, explosion, landslide, ice quake… */
+      type: source.type ?? 'earthquake',
+      /** `reviewed` si lo validó un sismólogo; `automatic` si no. */
+      status: source.status ?? null,
+    },
+    geometry: {
+      // [longitud, latitud, profundidad en km]
+      coordinates: [
+        feature.geometry?.coordinates?.[0],
+        feature.geometry?.coordinates?.[1],
+        feature.geometry?.coordinates?.[2] ?? null,
+      ],
+    },
+  }
+}
 
 export const projectFeatures = (features) =>
   (Array.isArray(features) ? features : [])

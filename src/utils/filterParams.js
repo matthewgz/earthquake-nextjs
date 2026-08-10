@@ -9,12 +9,14 @@ export const PARAM_KEYS = {
   magnitude: 'mag',
   start: 'desde',
   end: 'hasta',
+  onlyEarthquakes: 'solosismos',
 }
 
 export const EMPTY_FILTERS = Object.freeze({
   minMagnitude: null,
   start: null,
   end: null,
+  onlyEarthquakes: null,
 })
 
 /**
@@ -34,21 +36,37 @@ export const parseFilterParams = (search) => {
   const start = params.get(PARAM_KEYS.start)
   const end = params.get(PARAM_KEYS.end)
 
+  // Solo `1`/`0` explícitos cuentan; cualquier otra cosa se trata como ausente
+  // para que el valor por defecto de la app siga mandando.
+  const rawOnlyEarthquakes = params.get(PARAM_KEYS.onlyEarthquakes)
+
   return {
     minMagnitude:
       rawMagnitude && MAGNITUDE_OPTIONS.includes(magnitude) ? magnitude : null,
     start: isValidISODate(start) ? start : null,
     end: isValidISODate(end) ? end : null,
+    onlyEarthquakes:
+      rawOnlyEarthquakes === '1'
+        ? true
+        : rawOnlyEarthquakes === '0'
+          ? false
+          : null,
   }
 }
 
 /** Serializa los filtros al querystring, con orden fijo para poder comparar. */
-export const buildFilterSearch = ({ minMagnitude, start, end }) => {
+export const buildFilterSearch = ({
+  minMagnitude,
+  start,
+  end,
+  onlyEarthquakes,
+}) => {
   const params = new URLSearchParams()
 
   params.set(PARAM_KEYS.magnitude, String(minMagnitude))
   params.set(PARAM_KEYS.start, start)
   params.set(PARAM_KEYS.end, end)
+  params.set(PARAM_KEYS.onlyEarthquakes, onlyEarthquakes ? '1' : '0')
 
   return `?${params.toString()}`
 }

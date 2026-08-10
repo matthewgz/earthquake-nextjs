@@ -5,15 +5,17 @@ import Controls from './Controls'
 import styled from 'styled-components'
 
 const Container = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
 
-  & > * {
+  /*
+    Los tres primeros controles (magnitud y las dos fechas) van a ancho fijo;
+    el último es la casilla, que se ajusta a su contenido.
+  */
+  & > *:not(:last-child) {
     width: 250px;
-    padding: 0;
-    margin: 0;
-    margin-left: 16px;
   }
 `
 

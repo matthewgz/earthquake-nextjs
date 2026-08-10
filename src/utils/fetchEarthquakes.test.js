@@ -59,13 +59,55 @@ describe('projectFeatures', () => {
       'id',
       'properties',
     ])
-    assert.deepEqual(Object.keys(projected.properties).sort(), [
-      'mag',
-      'place',
-      'time',
-      'url',
-    ])
+    // Campos internos de USGS que la app no usa y que multiplican el peso de
+    // una respuesta amplia (~719 KB sin proyectar).
     assert.equal(projected.properties.rms, undefined)
+    assert.equal(projected.properties.ids, undefined)
+    assert.equal(projected.properties.sources, undefined)
+  })
+
+  test('conserva los campos informativos que USGS ya envía', () => {
+    const [projected] = projectFeatures([
+      feature('us1', {
+        properties: {
+          felt: 287,
+          cdi: 7.4,
+          mmi: 7.02,
+          alert: 'yellow',
+          tsunami: 1,
+          sig: 1032,
+          magType: 'mww',
+          type: 'quarry blast',
+          status: 'reviewed',
+        },
+      }),
+    ])
+
+    // Venían en la misma respuesta que ya pedíamos y se estaban descartando.
+    assert.equal(projected.properties.felt, 287)
+    assert.equal(projected.properties.cdi, 7.4)
+    assert.equal(projected.properties.mmi, 7.02)
+    assert.equal(projected.properties.alert, 'yellow')
+    assert.equal(projected.properties.tsunami, 1)
+    assert.equal(projected.properties.sig, 1032)
+    assert.equal(projected.properties.magType, 'mww')
+    assert.equal(projected.properties.type, 'quarry blast')
+    assert.equal(projected.properties.status, 'reviewed')
+  })
+
+  test('conserva la profundidad como tercera coordenada', () => {
+    const [projected] = projectFeatures([feature('us1')])
+
+    assert.equal(projected.geometry.coordinates[2], 49.7)
+  })
+
+  test('rellena tipo y tsunami cuando faltan', () => {
+    const [projected] = projectFeatures([
+      feature('us1', { properties: { type: null, tsunami: null } }),
+    ])
+
+    assert.equal(projected.properties.type, 'earthquake')
+    assert.equal(projected.properties.tsunami, 0)
   })
 
   test('descarta features sin coordenadas utilizables', () => {

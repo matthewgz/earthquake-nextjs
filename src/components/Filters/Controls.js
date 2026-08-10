@@ -2,6 +2,7 @@ import React, { useContext } from 'react'
 
 import Select from 'components/Select'
 import DatePicker from 'components/DatePicker'
+import OnlyEarthquakesToggle from './OnlyEarthquakesToggle'
 import { Context } from 'context/index'
 
 /**
@@ -32,6 +33,7 @@ const Controls = () => {
         max={today}
         onChange={setRangeEnd}
       />
+      <OnlyEarthquakesToggle />
     </>
   )
 }

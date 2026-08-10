@@ -170,7 +170,7 @@ const EarthquakeMap = (props) => {
           position={[getLatLng(selected).lat, getLatLng(selected).lng]}
           eventHandlers={{ popupclose: closePopup }}
         >
-          <Card {...selected} />
+          <Card {...selected} $detailed />
         </Popup>
       )}
     </MapContainer>

@@ -75,6 +75,20 @@ describe('buildQuery', () => {
     assert.equal(result.format, 'geojson')
   })
 
+  test('añade eventtype solo cuando se piden únicamente sismos naturales', () => {
+    const base = { minMagnitude: 5, start: '2026-08-10', end: '2026-08-10' }
+
+    assert.equal(
+      params(buildQuery({ ...base, onlyEarthquakes: true })).eventtype,
+      'earthquake',
+    )
+    assert.equal(
+      params(buildQuery({ ...base, onlyEarthquakes: false })).eventtype,
+      undefined,
+    )
+    assert.equal(params(buildQuery(base)).eventtype, undefined)
+  })
+
   test('acepta magnitud 0 (es un valor válido, no ausencia de filtro)', () => {
     const result = params(
       buildQuery({ minMagnitude: 0, start: '2026-08-10', end: '2026-08-10' }),

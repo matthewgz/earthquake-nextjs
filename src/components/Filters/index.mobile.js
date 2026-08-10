@@ -18,6 +18,11 @@ const Container = styled.div`
   z-index: 900;
   position: absolute;
 
+  /* Espaciado uniforme entre controles apilados. */
+  & > * + * {
+    margin-top: 16px;
+  }
+
   animation: ${(props) => move(props)} ease-out 1s;
   ${(props) => props.$fin?.right && `right: ${props.$fin?.right}`};
   ${(props) => props.$fin?.left && `left: ${props.$fin?.left}`};

@@ -82,7 +82,7 @@ const reducer = (state, action) => {
  *   girando para siempre y el scroll infinito moría con él.
  */
 const useEarthquakes = ({ initialData, initialQuery, initialTotal }) => {
-  const { minMagnitude, range } = useContext(Context)
+  const { minMagnitude, onlyEarthquakes, range } = useContext(Context)
 
   const [state, dispatch] = useReducer(reducer, undefined, () =>
     getInitialState(initialData, initialTotal),
@@ -103,6 +103,7 @@ const useEarthquakes = ({ initialData, initialQuery, initialTotal }) => {
 
   const query = buildQuery({
     minMagnitude,
+    onlyEarthquakes,
     start: range.start,
     end: range.end,
   })

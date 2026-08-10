@@ -7,7 +7,7 @@ import { Context } from 'context/index'
 import { STATUS } from 'hooks/useEarthquakes'
 import { move } from 'styles/keyframes'
 import { MAX_RESULTS } from 'utils/constants'
-import { getTimeZoneLabel } from 'utils/formatters'
+import { formatCount, getTimeZoneLabel } from 'utils/formatters'
 import { useInView } from 'react-intersection-observer'
 
 import styled from 'styled-components'
@@ -96,8 +96,6 @@ const hide = {
 }
 
 const timeZoneLabel = getTimeZoneLabel()
-
-const formatCount = (value) => new Intl.NumberFormat('es-419').format(value)
 
 const Results = (props) => {
   const { data, total, truncated, status, error, hasMore, loadMore, retry } =

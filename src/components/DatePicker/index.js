@@ -38,7 +38,6 @@ const Text = styled.p`
 
 const Container = styled.div`
   position: relative;
-  margin-top: 16px;
 `
 
 const NativeDateInput = styled.input`
