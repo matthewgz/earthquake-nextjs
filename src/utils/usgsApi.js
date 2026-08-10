@@ -84,6 +84,17 @@ export const getQueryUrl = (query) => `${getServiceUrl()}/query?${query}`
  * `/count` devuelve el total real. Hace falta porque `metadata.count`
  * desaparece de la respuesta de `/query` en cuanto se envía `limit`
  * (verificado), y sin él no podríamos distinguir "1000 resultados" de
- * "los primeros 1000 de 10.630".
+ * "los primeros 1000 de 10.411".
  */
-export const getCountUrl = (query) => `${getServiceUrl()}/count?${query}`
+export const getCountUrl = (query) => {
+  const params = new URLSearchParams(query)
+
+  // `/count` también respeta `limit`: pasárselo devuelve como mucho
+  // MAX_RESULTS y anula justo el dato que veníamos a buscar (verificado:
+  // 10.411 sin `limit` frente a 1.000 con él). `orderby` no aporta nada a un
+  // conteo.
+  params.delete('limit')
+  params.delete('orderby')
+
+  return `${getServiceUrl()}/count?${params.toString()}`
+}

@@ -132,6 +132,26 @@ describe('getQueryUrl / getCountUrl', () => {
     assert.match(getCountUrl(query), /\/fdsnws\/event\/1\/count\?/)
   })
 
+  test('la URL de /count no lleva limit ni orderby', () => {
+    // `/count` respeta `limit`: con `limit=1000` devuelve 1000 en vez del total
+    // real (verificado contra la API: 10.411 sin él). Mandárselo anularía el
+    // único motivo por el que consultamos este endpoint.
+    const countParams = new URLSearchParams(new URL(getCountUrl(query)).search)
+
+    assert.equal(countParams.get('limit'), null)
+    assert.equal(countParams.get('orderby'), null)
+    // Los filtros que definen el conjunto sí tienen que seguir ahí.
+    assert.equal(countParams.get('minmagnitude'), '5')
+    assert.ok(countParams.get('starttime'))
+    assert.ok(countParams.get('endtime'))
+  })
+
+  test('la URL de /query sí conserva limit', () => {
+    const queryParams = new URLSearchParams(new URL(getQueryUrl(query)).search)
+
+    assert.equal(queryParams.get('limit'), '1000')
+  })
+
   test('tolera la forma antigua de la variable de entorno', () => {
     const original = process.env.NEXT_PUBLIC_ENV_URL_API
 
