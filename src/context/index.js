@@ -24,6 +24,22 @@ const getTodaySnapshot = () => todayISO()
 // hidratación, sin recurrir a un setState dentro de un efecto.
 const getTodayServerSnapshot = () => null
 
+/**
+ * Ancho por debajo del cual se usa el diseño móvil. Coincide con el punto en
+ * que los tres filtros dejan de caber en la barra superior.
+ */
+const MOBILE_QUERY = '(max-width: 767px)'
+
+const subscribeToViewport = (onChange) => {
+  const list = window.matchMedia(MOBILE_QUERY)
+
+  list.addEventListener('change', onChange)
+
+  return () => list.removeEventListener('change', onChange)
+}
+
+const getIsMobileSnapshot = () => window.matchMedia(MOBILE_QUERY).matches
+
 export const Provider = ({ children, isMobile: mobile }) => {
   const [showFilters, setShowFilters] = useState(false)
 
@@ -37,7 +53,20 @@ export const Provider = ({ children, isMobile: mobile }) => {
     zoom: 4,
   })
 
-  const [isMobile] = useState(mobile)
+  /**
+   * El User-Agent detectado en el servidor sirve de pista para el primer
+   * render (evita el salto de layout), pero a partir de la hidratación manda el
+   * ancho real de la ventana.
+   *
+   * Antes el valor se congelaba en `useState`: nunca reaccionaba a un cambio de
+   * tamaño ni de orientación, y las tablets caían siempre en el diseño de
+   * escritorio porque UAParser no las clasifica como `mobile`.
+   */
+  const isMobile = useSyncExternalStore(
+    subscribeToViewport,
+    getIsMobileSnapshot,
+    () => mobile,
+  )
 
   const today = useSyncExternalStore(
     subscribe,
