@@ -10,7 +10,7 @@ import Header from '../Header'
 import Results from '../Results'
 import { Context } from '../../context/index'
 import { PER_PAGE, TYPES } from '../../utils/constants'
-import getUrlAPI from '../../utils/getUrlAPI'
+import { buildQuery, getQueryUrl } from '../../utils/usgsApi'
 
 const EarthquakeMap = dynamic(() => import('../EarthquakeMap'), { ssr: false })
 
@@ -70,17 +70,22 @@ const reducer = (state, action) => {
 }
 
 // Función para cargar datos en el cliente
-async function getServerData(dates, minMagnitude) {
-  const URL = getUrlAPI(dates, minMagnitude)
-  const res = await fetch(URL)
+async function getServerData(query) {
+  const res = await fetch(getQueryUrl(query))
   const data = await res.json()
   return data?.features || []
 }
 
-export default function ClientHome({ initialData }) {
-  const firstUpdate = useRef(true)
-  const { minMagnitude, dates } = useContext(Context)
+export default function ClientHome({ initialData, initialQuery }) {
+  const { minMagnitude, range } = useContext(Context)
   const [state, dispatch] = useReducer(reducer, getInitialState(initialData))
+
+  // Sustituye a la antigua guardia `firstUpdate`, que suprimía la
+  // reconciliación para siempre: si el "hoy" del servidor no coincidía con el
+  // del navegador, la discrepancia no se corregía nunca. Comparar la consulta
+  // derivada con la que ya trajo el servidor permite exactamente una petición
+  // correctiva, y ninguna cuando ambos coinciden.
+  const lastQuery = useRef(initialQuery)
 
   const load = () => {
     dispatch({ type: TYPES.start })
@@ -92,19 +97,27 @@ export default function ClientHome({ initialData }) {
   }
 
   useEffect(() => {
-    if (firstUpdate.current) {
-      firstUpdate.current = false
+    const query = buildQuery({
+      minMagnitude,
+      start: range.start,
+      end: range.end,
+    })
+
+    // `null` = rango aún sin inicializar (pre-hidratación) o inválido.
+    if (!query || query === lastQuery.current) {
       return
     }
 
+    lastQuery.current = query
+
     async function fetchFilteredData() {
       dispatch({ type: TYPES.start })
-      const data = await getServerData(dates, minMagnitude)
+      const data = await getServerData(query)
       dispatch({ type: TYPES.more, allData: data })
     }
 
     fetchFilteredData()
-  }, [minMagnitude, dates])
+  }, [minMagnitude, range.start, range.end])
 
   useEffect(() => {
     if (isEqual(state.allData, initialData)) {

@@ -1,40 +1,21 @@
 import React, { useContext } from 'react'
 import dynamic from 'next/dynamic'
+
+import Loader from 'components/Loader'
 import { Context } from 'context/index'
-import moment from 'moment'
 
-const Desktop = dynamic(() => import('./index.desktop'))
+const Desktop = dynamic(() => import('./index.desktop'), {
+  loading: () => <Loader />,
+})
 
-const Mobile = dynamic(() => import('./index.mobile'))
+const Mobile = dynamic(() => import('./index.mobile'), {
+  loading: () => <Loader />,
+})
 
 const Filters = () => {
-  const { dates, setDates, isMobile } = useContext(Context)
+  const { isMobile } = useContext(Context)
 
-  const handleToDate = (day, modifiers) => {
-    if (modifiers?.disabled) {
-      return
-    }
-
-    setDates({ ...dates, to: moment(day).format('YYYY-MM-DDT00:00:00') })
-  }
-
-  const handleFromDate = (day, modifiers) => {
-    if (modifiers?.disabled) {
-      return
-    }
-
-    setDates({ ...dates, from: moment(day).format('YYYY-MM-DDT23:59:59') })
-  }
-
-  return (
-    <>
-      {isMobile ? (
-        <Mobile handleToDate={handleToDate} handleFromDate={handleFromDate} />
-      ) : (
-        <Desktop handleToDate={handleToDate} handleFromDate={handleFromDate} />
-      )}
-    </>
-  )
+  return isMobile ? <Mobile /> : <Desktop />
 }
 
 export default Filters

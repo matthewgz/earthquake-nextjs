@@ -128,27 +128,32 @@ export const addDaysISO = (iso, days) => {
 }
 
 /**
+ * Devuelve una fecha válida no futura: recorta a hoy lo que venga por delante y
+ * reemplaza por hoy lo que no sea una fecha válida. USGS no tiene datos del
+ * futuro, así que una fecha futura solo produce resultados vacíos.
+ */
+export const clampToToday = (iso) => {
+  const today = todayISO()
+
+  if (!isValidISODate(iso)) {
+    return today
+  }
+
+  return compareISO(iso, today) > 0 ? today : iso
+}
+
+/**
  * Normaliza un rango que puede venir de la URL, de estado persistido o de un
  * input manipulado. Nunca lanza: corrige en silencio y deja que la UI refleje
  * la corrección.
  *
  * - descarta valores no parseables y los reemplaza por hoy
- * - recorta cualquier fecha futura a hoy (USGS no tiene datos del futuro)
+ * - recorta cualquier fecha futura a hoy
  * - invierte el rango si viene al revés
  */
 export const sanitizeRange = (raw) => {
-  const today = todayISO()
-
-  const clamp = (value) => {
-    if (!isValidISODate(value)) {
-      return today
-    }
-
-    return compareISO(value, today) > 0 ? today : value
-  }
-
-  const start = clamp(raw?.start)
-  const end = clamp(raw?.end)
+  const start = clampToToday(raw?.start)
+  const end = clampToToday(raw?.end)
 
   return compareISO(start, end) > 0
     ? { start: end, end: start }
