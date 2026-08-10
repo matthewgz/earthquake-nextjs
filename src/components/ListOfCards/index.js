@@ -33,12 +33,9 @@ const ListOfCards = (props) => {
   const { setMarker } = useContext(Context)
 
   const select = (item) => {
-    setMarker((prev) => ({
-      ...prev,
-      id: item.id,
-      position: getLatLng(item),
-      zoom: 4,
-    }))
+    // Sin `zoom`: el mapa se desplaza hasta el sismo pero conserva el nivel de
+    // zoom que tuviera el usuario.
+    setMarker({ id: item.id, position: getLatLng(item) })
   }
 
   return (

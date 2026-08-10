@@ -84,7 +84,6 @@ function MapController({
   features,
   detailStatus,
   drawerWidth,
-  layerBounds,
   onPopupClose,
 }) {
   const map = useMap()
@@ -93,47 +92,38 @@ function MapController({
   // Último conjunto de resultados que se encuadró, para no repetirlo.
   const fittedFeatures = useRef(null)
 
-  useEffect(() => {
-    if (marker?.position) {
-      map.setView(
-        [marker.position.lat, marker.position.lng],
-        marker.zoom ?? DEFAULT_ZOOM,
-      )
-    }
-  }, [map, marker?.position, marker?.zoom])
-
   /**
-   * Reencuadra al llegar el detalle del sismo abierto.
+   * Al abrir un sismo, desplaza lo justo para que quepa su tarjeta.
    *
-   * Con capas de intensidad se ajusta a su extensión: las celdas de reportes
-   * son de 10 km y al zoom con el que se navega la lista no llegan ni a un
-   * píxel, así que sin esto se dibujan pero no se ven.
+   * **Nunca cambia el zoom**, y eso es deliberado. Antes se hacían dos cosas
+   * aquí: forzar `setView` a un zoom fijo, y después reencuadrar sobre la
+   * extensión de las capas de intensidad. Si el usuario se había acercado —por
+   * ejemplo abriendo un clúster—, abrir un sismo lo alejaba de golpe, los
+   * clústeres se rehacían, y al llegar el detalle venía un segundo salto de
+   * vista.
    *
-   * Sin capas basta con desplazar lo justo para que quepa el popup. En ambos
-   * casos se reserva sitio para el cajón de resultados, que se superpone al
-   * mapa y del que Leaflet no sabe nada, y para el popup, que se despliega
-   * hacia arriba y centrado sobre el marker.
+   * Reencuadrar sobre las capas dejó de hacer falta cuando los reportes
+   * pasaron a dibujarse como círculos de tamaño fijo en píxeles: ya se ven a
+   * cualquier zoom, que era el único motivo para alejarse.
+   *
+   * Se ejecuta también al llegar el detalle porque la tarjeta crece entonces y
+   * puede dejar de caber. Se reserva sitio para el cajón de resultados, que se
+   * superpone al mapa y del que Leaflet no sabe nada, y para el popup, que se
+   * despliega hacia arriba y centrado sobre el marker.
    */
   useEffect(() => {
-    if (!marker?.position || detailStatus !== 'success') {
+    if (!marker?.position) {
       return
     }
 
     const halfWidth = POPUP_MAX_WIDTH / 2
-    const padding = {
+
+    map.panInside([marker.position.lat, marker.position.lng], {
       paddingTopLeft: [drawerWidth + halfWidth + 24, POPUP_MAX_HEIGHT + 48],
       paddingBottomRight: [halfWidth + 24, 24],
       animate: false,
-    }
-
-    if (layerBounds?.isValid()) {
-      map.fitBounds(layerBounds, { ...padding, maxZoom: 9 })
-
-      return
-    }
-
-    map.panInside([marker.position.lat, marker.position.lng], padding)
-  }, [map, marker?.position, detailStatus, drawerWidth, layerBounds])
+    })
+  }, [map, marker?.position, detailStatus, drawerWidth])
 
   /**
    * Al cambiar el conjunto de resultados sin selección, encuadra todos los
@@ -253,10 +243,10 @@ const EarthquakeMap = (props) => {
     // La posición llega desde el propio marker en vez de buscarse en `data`:
     // así la función no depende de la lista y es estable de verdad.
     (id, position) => {
+      // Sin `zoom`: seleccionar un sismo no debe mover el nivel de zoom que
+      // haya elegido el usuario.
       setMarker((prev) =>
-        prev?.id === id
-          ? { id: null, position: null, zoom: prev.zoom }
-          : { id, position, zoom: 5 },
+        prev?.id === id ? { id: null, position: null } : { id, position },
       )
     },
     [setMarker],
@@ -268,38 +258,12 @@ const EarthquakeMap = (props) => {
       // React descarte el re-render. Importa porque Leaflet emite
       // `popupclose` también al desmontar el popup, y sin esto cada cierre
       // provocaría un render extra de todos los consumidores del contexto.
-      prev.id === null ? prev : { id: null, position: null, zoom: prev.zoom },
+      prev.id === null ? prev : { id: null, position: null },
     )
   }, [setMarker])
 
   const hasContours = Boolean(detail.detail?.intensityContours)
   const hasReports = Boolean(detail.detail?.feltReports?.features?.length)
-
-  /**
-   * Extensión conjunta de las capas visibles, para encuadrarlas. Se calcula con
-   * el propio parser de Leaflet en lugar de recorrer las coordenadas a mano,
-   * que con `MultiLineString` y `Polygon` mezclados sería fácil de equivocar.
-   */
-  const layerBounds = useMemo(() => {
-    const visible = [
-      showContours && detail.detail?.intensityContours,
-      showReports && detail.detail?.feltReports,
-    ].filter(Boolean)
-
-    if (!visible.length) {
-      return null
-    }
-
-    return visible.reduce(
-      (acc, data) => acc.extend(L.geoJSON(data).getBounds()),
-      L.latLngBounds([]),
-    )
-  }, [
-    showContours,
-    showReports,
-    detail.detail?.intensityContours,
-    detail.detail?.feltReports,
-  ])
 
   return (
     <Wrapper>
@@ -332,7 +296,6 @@ const EarthquakeMap = (props) => {
           features={data}
           detailStatus={detail.status}
           drawerWidth={showResults ? RESULTS_DRAWER_WIDTH : 0}
-          layerBounds={layerBounds}
           onPopupClose={closePopup}
         />
         <TileLayer
