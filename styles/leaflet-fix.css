@@ -25,3 +25,12 @@
   border-radius: 0 !important;
   box-shadow: none !important;
 }
+
+/*
+  Leaflet pone `cursor: pointer` a toda capa interactiva. Los límites de placa
+  lo son solo para poder mostrar su tooltip al pasar por encima: la mano
+  sugeriría que se pueden pulsar y que algo va a ocurrir.
+*/
+.leaflet-placas-pane path {
+  cursor: default;
+}

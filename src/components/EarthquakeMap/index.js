@@ -19,9 +19,16 @@ import FeltReports from 'components/FeltReports'
 import IntensityContours from 'components/IntensityContours'
 import IntensityLegend from 'components/IntensityLegend'
 import LayerToggles from 'components/LayerToggles'
+import TectonicPlates from 'components/TectonicPlates'
 import { Context } from 'context/index'
 import useEarthquakeDetail from 'hooks/useEarthquakeDetail'
+import useTectonicPlates from 'hooks/useTectonicPlates'
 import getLatLng from 'utils/getLatLng'
+import {
+  PLATES_PREFERENCE,
+  readLayerPreference,
+  writeLayerPreference,
+} from 'utils/layerPreferences'
 
 import 'leaflet/dist/leaflet.css'
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css'
@@ -193,6 +200,28 @@ const EarthquakeMap = (props) => {
   const [showContours, setShowContours] = useState(true)
   const [showReports, setShowReports] = useState(true)
 
+  /**
+   * Las placas, en cambio, apagadas por defecto: son contexto permanente y no
+   * todo el mundo lo quiere de fondo, además de costar una descarga aparte.
+   *
+   * Se recuerda entre visitas porque es una preferencia de lectura, no algo que
+   * dependa de la consulta. Leer `localStorage` en el inicializador es seguro
+   * aquí y solo aquí: el mapa se carga con `dynamic(ssr: false)`, así que este
+   * componente nunca se renderiza en el servidor y no hay hidratación que
+   * desajustar.
+   */
+  const [showPlates, setShowPlates] = useState(() =>
+    readLayerPreference(PLATES_PREFERENCE, false),
+  )
+
+  useEffect(() => {
+    writeLayerPreference(PLATES_PREFERENCE, showPlates)
+  }, [showPlates])
+
+  // Los 164 KB del archivo se piden al encender la capa por primera vez, nunca
+  // antes.
+  const plates = useTectonicPlates(showPlates)
+
   const markerId = marker?.id
 
   // Sin `useMemo`: un `find` sobre como mucho 1000 elementos es trivial, y
@@ -276,8 +305,11 @@ const EarthquakeMap = (props) => {
         hasReports={hasReports}
         showContours={showContours}
         showReports={showReports}
+        showPlates={showPlates}
+        platesStatus={plates.status}
         onToggleContours={setShowContours}
         onToggleReports={setShowReports}
+        onTogglePlates={setShowPlates}
       />
       {((hasContours && showContours) || (hasReports && showReports)) && (
         <IntensityLegend
@@ -302,6 +334,13 @@ const EarthquakeMap = (props) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {/*
+          Contexto de fondo: va en su propio panel, por debajo de las capas del
+          sismo, para que encenderla con un sismo abierto no le pase por encima
+          a sus contornos de intensidad.
+        */}
+        {showPlates && <TectonicPlates data={plates.data} />}
 
         {/*
         `chunkedLoading` reparte el alta de markers en varios frames para no

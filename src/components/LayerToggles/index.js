@@ -21,14 +21,19 @@ const Title = styled.p`
   margin-bottom: 6px;
 `
 
+const Group = styled.p`
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 8px;
+  opacity: 0.6;
+  text-transform: uppercase;
+`
+
 const Row = styled.div`
   align-items: center;
   display: flex;
   gap: 6px;
-
-  & + & {
-    margin-top: 4px;
-  }
+  margin-top: 4px;
 `
 
 const Checkbox = styled.input`
@@ -49,10 +54,22 @@ const Label = styled.label`
   font-size: 11px;
 `
 
+const Hint = styled.span`
+  font-size: 10px;
+  opacity: 0.7;
+`
+
 /**
- * Aparece solo cuando el sismo abierto tiene alguna de las dos capas. Las dos
- * son independientes a propósito: una es el modelo de USGS y la otra son
- * reportes de personas, y compararlas es justamente lo interesante.
+ * Control de capas del mapa, siempre visible.
+ *
+ * Antes solo aparecía con un sismo abierto, porque solo ofrecía sus dos capas.
+ * Las placas tectónicas son contexto global —no dependen de ninguna
+ * selección—, así que el panel se divide en dos bloques: lo que se puede ver
+ * siempre, y lo que solo existe mientras haya un sismo abierto.
+ *
+ * Las capas del sismo siguen siendo independientes entre sí a propósito: una es
+ * el modelo de USGS y la otra son reportes de personas, y compararlas es
+ * justamente lo interesante.
  */
 const LayerToggles = (props) => {
   const {
@@ -60,41 +77,65 @@ const LayerToggles = (props) => {
     hasReports,
     showContours,
     showReports,
+    showPlates,
+    platesStatus,
     onToggleContours,
     onToggleReports,
+    onTogglePlates,
   } = props
 
   const contoursId = useId()
   const reportsId = useId()
+  const platesId = useId()
 
-  if (!hasContours && !hasReports) {
-    return null
-  }
+  const hasEarthquakeLayers = hasContours || hasReports
 
   return (
-    <Container>
-      <Title>Capas del sismo</Title>
-      {hasContours && (
-        <Row>
-          <Checkbox
-            id={contoursId}
-            type="checkbox"
-            checked={showContours}
-            onChange={(event) => onToggleContours(event.target.checked)}
-          />
-          <Label htmlFor={contoursId}>Intensidad estimada</Label>
-        </Row>
-      )}
-      {hasReports && (
-        <Row>
-          <Checkbox
-            id={reportsId}
-            type="checkbox"
-            checked={showReports}
-            onChange={(event) => onToggleReports(event.target.checked)}
-          />
-          <Label htmlFor={reportsId}>Reportes de personas</Label>
-        </Row>
+    <Container role="group" aria-label="Capas del mapa">
+      <Title>Capas</Title>
+      <Row>
+        <Checkbox
+          id={platesId}
+          type="checkbox"
+          checked={showPlates}
+          onChange={(event) => onTogglePlates(event.target.checked)}
+        />
+        <Label htmlFor={platesId}>Placas tectónicas</Label>
+        {/*
+          El archivo son 164 KB que se piden al encender la capa, así que en
+          una conexión lenta hay un hueco entre marcar la casilla y ver las
+          líneas. Sin este aviso parecería que el interruptor no funciona.
+        */}
+        {platesStatus === 'loading' && <Hint>Cargando…</Hint>}
+        {platesStatus === 'error' && <Hint>No se pudo cargar</Hint>}
+      </Row>
+
+      {hasEarthquakeLayers && (
+        <>
+          <Group>Del sismo</Group>
+          {hasContours && (
+            <Row>
+              <Checkbox
+                id={contoursId}
+                type="checkbox"
+                checked={showContours}
+                onChange={(event) => onToggleContours(event.target.checked)}
+              />
+              <Label htmlFor={contoursId}>Intensidad estimada</Label>
+            </Row>
+          )}
+          {hasReports && (
+            <Row>
+              <Checkbox
+                id={reportsId}
+                type="checkbox"
+                checked={showReports}
+                onChange={(event) => onToggleReports(event.target.checked)}
+              />
+              <Label htmlFor={reportsId}>Reportes de personas</Label>
+            </Row>
+          )}
+        </>
       )}
     </Container>
   )

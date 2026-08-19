@@ -109,6 +109,36 @@ petición por evento**. Solo se pide al abrir un sismo, y se cachea.
   sismos M≥5, pero en el 0–20% por debajo de M4. La UI degrada mostrando solo
   lo que hay.
 
+## Placas tectónicas
+
+Capa opcional, apagada por defecto, que dibuja los límites entre placas. Es lo
+que da sentido al mapa: los sismos no salpican el planeta al azar, se alinean
+con esos trazos. Al pasar el cursor por un tramo, un tooltip nombra las dos
+placas en contacto y avisa si es una zona de subducción, que son los 65 tramos
+donde una placa se hunde bajo otra y donde ocurren los sismos profundos y los
+de mayor magnitud.
+
+- **Fuente**: modelo PB2002 de _An updated digital model of plate boundaries_
+  (Peter Bird, 2003), en la conversión a GeoJSON de Hugo Ahlenius / Nordpil
+  ([fraxen/tectonicplates](https://github.com/fraxen/tectonicplates)). 241
+  tramos y 6.292 vértices.
+- **Licencia [ODC-BY 1.0](https://opendatacommons.org/licenses/by/1-0/), que
+  exige atribución.** Se cumple en dos sitios: este párrafo y la opción
+  `attribution` de la capa, que Leaflet muestra en su control mientras la capa
+  está encendida.
+- **El archivo es estático**, en `public/placas-tectonicas.geojson`, en vez de
+  pedirse a su origen en cada visita: el dato no cambia desde 2003, así se
+  evita depender de un tercero en caliente y de su CORS. Aun así no entra en el
+  bundle: sus 164 KB se piden la primera vez que alguien enciende la capa, y
+  quien no la use no los descarga.
+- **Va en un panel propio de Leaflet** (`placas`, `z-index` 350) por debajo del
+  `overlayPane` (400) donde viven las capas del sismo. Sin eso Leaflet apila
+  por orden de montaje, y encender las placas con un sismo ya abierto las
+  dejaba pintadas encima de sus contornos de intensidad.
+- El interruptor **se recuerda en `localStorage`** (`sismos:placas`): es una
+  preferencia de lectura, no depende de la consulta. Los toggles de las capas
+  del sismo siguen siendo de sesión.
+
 ## Estructura
 
 ```
