@@ -1,0 +1,66 @@
+name: Node.js CI Setup
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Enable Corepack and set Yarn version
+        run: |
+          corepack enable
+          corepack prepare yarn@$(jq -r .packageManager package.json | cut -d'@' -f2) --activate
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Validate lockfile under hardened mode
+        if: github.event_name == 'pull_request'
+        env:
+          YARN_ENABLE_HARDENED_MODE: '1'
+        run: yarn install --immutable
+
+      - name: Lint code
+        run: yarn lint
+
+      - name: Run unit tests
+        run: yarn test
+
+      - name: Build project
+        run: yarn build
+
+      - name: Check code formatting
+        run: yarn prettier:check
+
+      - name: Audit dependencies
+        run: yarn audit
+
+      - name: Check Node version consistency
+        run: |
+          NODE_FROM_NVMRC=$(cat .nvmrc)
+          NODE_FROM_PACKAGE=$(jq -r '.engines.node' package.json || echo "")
+          if [[ "$NODE_FROM_PACKAGE" != "" && "$NODE_FROM_NVMRC" != "$NODE_FROM_PACKAGE" ]]; then
+            echo "::error ::Node.js version mismatch between .nvmrc ($NODE_FROM_NVMRC) and package.json ($NODE_FROM_PACKAGE)"
+            exit 1
+          fi
+
+      - name: Check Node.js vulnerability (is-my-node-vulnerable)
+        run: npx is-my-node-vulnerable

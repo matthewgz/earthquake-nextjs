@@ -24,15 +24,16 @@ La app queda en http://localhost:3000.
 
 ## Scripts
 
-| Script                 | Qué hace                          |
-| ---------------------- | --------------------------------- |
-| `npm run dev`          | Servidor de desarrollo            |
-| `npm run build`        | Build de producción               |
-| `npm start`            | Sirve el build de producción      |
-| `npm run lint`         | ESLint (`eslint-config-next`)     |
-| `npm test`             | Tests unitarios con `node --test` |
-| `npm run format`       | Formatea con Prettier             |
-| `npm run format:check` | Comprueba el formato sin escribir |
+| Script                | Qué hace                          |
+| --------------------- | --------------------------------- |
+| `yarn dev`            | Servidor de desarrollo            |
+| `yarn build`          | Build de producción               |
+| `yarn start`          | Sirve el build de producción      |
+| `yarn lint`           | ESLint (`eslint-config-next`)     |
+| `yarn test`           | Tests unitarios con `node --test` |
+| `yarn format`         | Formatea con Prettier             |
+| `yarn prettier:check` | Comprueba el formato sin escribir |
+| `yarn audit`          | Auditoría de dependencias         |
 
 ## Variables de entorno
 
